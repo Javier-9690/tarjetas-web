@@ -42,10 +42,7 @@ def verify_password(plain: str) -> bool:
 
 
 def ensure_default_passwords():
-    """
-    Crea en la tabla Password los hashes de DEFAULT_PASSWORDS
-    si aún no existen.
-    """
+    # Crea en la tabla Password los hashes de DEFAULT_PASSWORDS si aún no existen.
     existing = {p.hash for p in Password.query.all()}
     created = 0
     for pwd in DEFAULT_PASSWORDS:
@@ -59,7 +56,6 @@ def ensure_default_passwords():
 
 # =========================
 # Definición de categorías
-# (mapeo de columnas a campos de Card)
 # =========================
 CATEGORY_ORDER = ["MODULO", "MAESTRA", "MANTENCION", "PROVISORIA"]
 
@@ -119,10 +115,7 @@ def format_dt(dt: Optional[datetime]) -> str:
 
 
 def compute_card_status(card: Card):
-    """
-    Devuelve (texto_estado, tipo_estado)
-    tipo_estado ∈ {"Disponible", "Entregadas", "Devueltas"}
-    """
+    # Devuelve (texto_estado, tipo_estado)  tipo_estado ∈ {"Disponible","Entregadas","Devueltas"}
     deliveries = (
         Delivery.query.filter_by(category=card.category, card_id=card.id)
         .order_by(Delivery.entrega_at.asc())
@@ -144,9 +137,7 @@ def compute_card_status(card: Card):
 
 
 def get_last_open_delivery(card: Card) -> Optional[Delivery]:
-    """
-    Última entrega sin registro de devolución, o None.
-    """
+    # Última entrega sin registro de devolución, o None.
     deliveries = (
         Delivery.query.filter_by(category=card.category, card_id=card.id)
         .filter(Delivery.devolucion_at.is_(None))
@@ -169,6 +160,11 @@ def create_app():
         db.create_all()
         ensure_default_passwords()
 
+    # ===== context processor para usar {{ now.year }} en el footer =====
+    @app.context_processor
+    def inject_now():
+        return {"now": datetime.utcnow()}
+
     # =========================
     # Rutas
     # =========================
@@ -176,7 +172,7 @@ def create_app():
     @app.route("/")
     def index():
         if session.get("logged_in"):
-            return redirect(url_for("summary"))
+            return redirect(url_for("panel"))
         return redirect(url_for("login"))
 
     # ---------- LOGIN / LOGOUT ----------
@@ -188,7 +184,7 @@ def create_app():
             if verify_password(password):
                 session["logged_in"] = True
                 flash("Acceso correcto.", "success")
-                next_url = request.args.get("next") or url_for("summary")
+                next_url = request.args.get("next") or url_for("panel")
                 return redirect(next_url)
             flash("Clave incorrecta.", "danger")
         return render_template("login.html")
@@ -231,11 +227,11 @@ def create_app():
         passwords = Password.query.order_by(Password.id.asc()).all()
         return render_template("passwords.html", passwords=passwords)
 
-    # ---------- RESUMEN POR CATEGORÍA ----------
+    # ---------- PANEL / RESUMEN POR CATEGORÍA ----------
 
-    @app.route("/summary")
+    @app.route("/panel")
     @login_required
-    def summary():
+    def panel():
         summary_rows = []
 
         for code in CATEGORY_ORDER:
@@ -265,6 +261,12 @@ def create_app():
             summary_rows=summary_rows,
             categories=CATEGORY_ORDER,
         )
+
+    @app.route("/summary")
+    @login_required
+    def summary():
+        # Alias para compatibilidad
+        return redirect(url_for("panel"))
 
     @app.route("/export/summary.xlsx")
     @login_required
@@ -299,11 +301,15 @@ def create_app():
             output,
             as_attachment=True,
             download_name="resumen_tarjetas.xlsx",
-            mimetype=(
-                "application/"
-                "vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            ),
+            mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         )
+
+    # ---------- DASHBOARD (placeholder) ----------
+
+    @app.route("/dashboard")
+    @login_required
+    def dashboard():
+        return render_template("dashboard.html")
 
     # ---------- VISTA DE CATEGORÍA (listar + alta) ----------
 
@@ -367,11 +373,93 @@ def create_app():
             categories=CATEGORY_ORDER,
         )
 
+    # ---------- IMPORTAR TARJETAS DESDE EXCEL ----------
+
+    @app.route("/category/<category_code>/import", methods=["POST"])
+    @login_required
+    def import_cards(category_code):
+        if category_code not in CATEGORY_DEFINITIONS:
+            abort(404)
+
+        file = request.files.get("file")
+        if not file or file.filename == "":
+            flash("Seleccione un archivo Excel para importar.", "warning")
+            return redirect(url_for("category_view", category_code=category_code))
+
+        try:
+            df = pd.read_excel(file, dtype=str).fillna("")
+        except Exception as e:
+            flash(f"No se pudo leer el archivo Excel: {e}", "danger")
+            return redirect(url_for("category_view", category_code=category_code))
+
+        fields = CATEGORY_DEFINITIONS[category_code]
+
+        imported = 0
+
+        for _, row in df.iterrows():
+            card = Card(category=category_code)
+            empty = True
+
+            for field_name, label in fields:
+                value = ""
+                if field_name in df.columns:
+                    value = str(row.get(field_name, "")).strip()
+                elif label in df.columns:
+                    value = str(row.get(label, "")).strip()
+
+                if value:
+                    setattr(card, field_name, value)
+                    empty = False
+
+            # Estado (Activa / Inactiva)
+            status_val = ""
+            if "status" in df.columns:
+                status_val = str(row.get("status", "")).strip()
+            elif "Activa / Inactiva" in df.columns:
+                status_val = str(row.get("Activa / Inactiva", "")).strip()
+
+            if status_val not in ("Activa", "Inactiva"):
+                status_val = "Activa"
+            card.status = status_val
+
+            if not empty:
+                db.session.add(card)
+                imported += 1
+
+        if imported:
+            db.session.commit()
+            flash(f"Se importaron {imported} tarjetas desde el Excel.", "success")
+        else:
+            flash("No se encontraron registros válidos en el archivo.", "info")
+
+        return redirect(url_for("category_view", category_code=category_code))
+
+    # ---------- DESCARGAR PLANTILLA EXCEL ----------
+
+    @app.route("/category/<category_code>/template.xlsx")
+    @login_required
+    def download_cards_template(category_code):
+        if category_code not in CATEGORY_DEFINITIONS:
+            abort(404)
+
+        fields = CATEGORY_DEFINITIONS[category_code]
+        columns = [label for _, label in fields] + ["Activa / Inactiva"]
+        df = pd.DataFrame(columns=columns)
+        output = io.BytesIO()
+        df.to_excel(output, index=False)
+        output.seek(0)
+
+        filename = f"plantilla_tarjetas_{category_code.lower()}.xlsx"
+        return send_file(
+            output,
+            as_attachment=True,
+            download_name=filename,
+            mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        )
+
     # ---------- ELIMINAR TARJETA ----------
 
-    @app.route(
-        "/category/<category_code>/<int:card_id>/delete", methods=["POST"]
-    )
+    @app.route("/category/<category_code>/<int:card_id>/delete", methods=["POST"])
     @login_required
     def delete_card(category_code, card_id):
         card = Card.query.filter_by(id=card_id, category=category_code).first_or_404()
@@ -495,9 +583,7 @@ def create_app():
 
     # ---------- HISTORIAL POR TARJETA ----------
 
-    @app.route(
-        "/category/<category_code>/<int:card_id>/history", methods=["GET"]
-    )
+    @app.route("/category/<category_code>/<int:card_id>/history", methods=["GET"])
     @login_required
     def card_history(category_code, card_id):
         card = Card.query.filter_by(id=card_id, category=category_code).first_or_404()
