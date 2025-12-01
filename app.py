@@ -1,4 +1,3 @@
-# app.py
 import io
 import hashlib
 from datetime import datetime
@@ -232,7 +231,7 @@ def create_app():
         passwords = Password.query.order_by(Password.id.asc()).all()
         return render_template("passwords.html", passwords=passwords)
 
-    # ---------- RESUMEN POR CATEGORÍA ----------
+    # ---------- RESUMEN POR CATEGORÍA (PANEL) ----------
 
     @app.route("/summary")
     @login_required
@@ -266,6 +265,14 @@ def create_app():
             summary_rows=summary_rows,
             categories=CATEGORY_ORDER,
         )
+
+    # ---------- DASHBOARD (alias de momento al resumen) ----------
+
+    @app.route("/dashboard")
+    @login_required
+    def dashboard():
+        # De momento reutiliza la misma vista que el resumen general.
+        return summary()
 
     @app.route("/export/summary.xlsx")
     @login_required
@@ -368,7 +375,7 @@ def create_app():
             categories=CATEGORY_ORDER,
         )
 
-    # ---------- IMPORTAR TARJETAS DESDE EXCEL (NUEVO) ----------
+    # ---------- IMPORTAR TARJETAS DESDE EXCEL ----------
 
     @app.route("/category/<category_code>/import", methods=["POST"])
     @login_required
@@ -390,7 +397,6 @@ def create_app():
         fields = CATEGORY_DEFINITIONS[category_code]
         imported = 0
 
-        # Convertimos el DataFrame en lista de diccionarios
         for row in df.to_dict(orient="records"):
             # Si todas las celdas están vacías, se omite la fila
             if not any(str(v).strip() for v in row.values()):
@@ -421,7 +427,7 @@ def create_app():
 
         return redirect(url_for("category_view", category_code=category_code))
 
-    # ---------- EXPORTAR TARJETAS A EXCEL (NUEVO) ----------
+    # ---------- EXPORTAR TARJETAS A EXCEL ----------
 
     @app.route("/category/<category_code>/export.xlsx")
     @login_required
@@ -444,7 +450,6 @@ def create_app():
             row["Activa / Inactiva"] = card.status or "Activa"
             rows.append(row)
 
-        # Siempre devolvemos archivo, aunque no haya tarjetas (solo encabezados)
         column_labels = [label for _, label in fields] + ["Activa / Inactiva"]
         df = pd.DataFrame(rows, columns=column_labels)
 
@@ -463,7 +468,7 @@ def create_app():
             ),
         )
 
-    # ---------- EXPORTAR PLANTILLA VACÍA (NUEVO) ----------
+    # ---------- EXPORTAR PLANTILLA VACÍA ----------
 
     @app.route("/category/<category_code>/template.xlsx")
     @login_required
