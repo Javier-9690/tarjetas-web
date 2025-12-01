@@ -63,6 +63,7 @@ def ensure_default_passwords():
 # =========================
 CATEGORY_ORDER = ["MODULO", "MAESTRA", "MANTENCION", "PROVISORIA"]
 
+# (campo_en_BD, etiqueta_excel/HTML)
 CATEGORY_DEFINITIONS = {
     "MODULO": [
         ("n", "N°"),
@@ -365,6 +366,128 @@ def create_app():
             rows=rows,
             status_filter=status_filter,
             categories=CATEGORY_ORDER,
+        )
+
+    # ---------- IMPORTAR TARJETAS DESDE EXCEL (NUEVO) ----------
+
+    @app.route("/category/<category_code>/import", methods=["POST"])
+    @login_required
+    def import_cards_excel(category_code):
+        if category_code not in CATEGORY_DEFINITIONS:
+            abort(404)
+
+        file = request.files.get("excel_file")
+        if not file or file.filename == "":
+            flash("Debe seleccionar un archivo Excel.", "warning")
+            return redirect(url_for("category_view", category_code=category_code))
+
+        try:
+            df = pd.read_excel(file, dtype=str).fillna("")
+        except Exception as e:
+            flash(f"Error al leer el Excel: {e}", "danger")
+            return redirect(url_for("category_view", category_code=category_code))
+
+        fields = CATEGORY_DEFINITIONS[category_code]
+        imported = 0
+
+        # Convertimos el DataFrame en lista de diccionarios
+        for row in df.to_dict(orient="records"):
+            # Si todas las celdas están vacías, se omite la fila
+            if not any(str(v).strip() for v in row.values()):
+                continue
+
+            card = Card(category=category_code)
+
+            # Mapear columnas "humanas" a campos de BD
+            for field_name, label in fields:
+                value = str(row.get(label, "")).strip()
+                if value.lower() == "nan":
+                    value = ""
+                setattr(card, field_name, value)
+
+            status_value = str(row.get("Activa / Inactiva", "")).strip() or "Activa"
+            if status_value not in ("Activa", "Inactiva"):
+                status_value = "Activa"
+            card.status = status_value
+
+            db.session.add(card)
+            imported += 1
+
+        if imported > 0:
+            db.session.commit()
+            flash(f"Se importaron {imported} tarjetas desde Excel.", "success")
+        else:
+            flash("El archivo no contenía filas válidas.", "info")
+
+        return redirect(url_for("category_view", category_code=category_code))
+
+    # ---------- EXPORTAR TARJETAS A EXCEL (NUEVO) ----------
+
+    @app.route("/category/<category_code>/export.xlsx")
+    @login_required
+    def export_cards_excel(category_code):
+        if category_code not in CATEGORY_DEFINITIONS:
+            abort(404)
+
+        fields = CATEGORY_DEFINITIONS[category_code]
+        cards = (
+            Card.query.filter_by(category=category_code)
+            .order_by(Card.id.asc())
+            .all()
+        )
+
+        rows = []
+        for card in cards:
+            row = {}
+            for field_name, label in fields:
+                row[label] = getattr(card, field_name) or ""
+            row["Activa / Inactiva"] = card.status or "Activa"
+            rows.append(row)
+
+        # Siempre devolvemos archivo, aunque no haya tarjetas (solo encabezados)
+        column_labels = [label for _, label in fields] + ["Activa / Inactiva"]
+        df = pd.DataFrame(rows, columns=column_labels)
+
+        output = io.BytesIO()
+        df.to_excel(output, index=False)
+        output.seek(0)
+
+        filename = f"tarjetas_{category_code.lower()}.xlsx"
+        return send_file(
+            output,
+            as_attachment=True,
+            download_name=filename,
+            mimetype=(
+                "application/"
+                "vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            ),
+        )
+
+    # ---------- EXPORTAR PLANTILLA VACÍA (NUEVO) ----------
+
+    @app.route("/category/<category_code>/template.xlsx")
+    @login_required
+    def export_cards_template(category_code):
+        if category_code not in CATEGORY_DEFINITIONS:
+            abort(404)
+
+        fields = CATEGORY_DEFINITIONS[category_code]
+        column_labels = [label for _, label in fields] + ["Activa / Inactiva"]
+
+        df = pd.DataFrame(columns=column_labels)
+        output = io.BytesIO()
+        df.to_excel(output, index=False)
+        output.seek(0)
+
+        filename = f"plantilla_tarjetas_{category_code.lower()}.xlsx"
+        return send_file(
+            output,
+            as_attachment=True,
+            download_name=filename,
+            mimetype=(
+                "application/"
+                "vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            ),
         )
 
     # ---------- ELIMINAR TARJETA ----------
