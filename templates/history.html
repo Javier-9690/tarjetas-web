@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}Entrega / Devolución - {{ category_code }}{% endblock %}
+
+{% block content %}
+<h3>Entrega / Devolución</h3>
+<p>
+    Categoría: <strong>{{ category_code }}</strong><br>
+    Tarjeta N°: <strong>{{ card.numero_tarjeta or card.id }}</strong>
+</p>
+
+{% if last_open %}
+<p class="text-muted">
+    Última entrega pendiente:
+    {{ last_open.nombre }} — {{ last_open.rut }} —
+    {{ last_open.entrega_at|default('', true) }}
+</p>
+{% elif last_any %}
+<p class="text-muted">
+    Última operación:
+    {{ last_any.nombre }} |
+    Entrega: {{ last_any.entrega_at }} |
+    Devolución: {{ last_any.devolucion_at }}
+</p>
+{% endif %}
+
+<form method="post" class="row">
+    <div class="col-md-6">
+        <h5>Colaborador</h5>
+        <div class="mb-2">
+            <label class="form-label">Rut</label>
+            <input type="text" class="form-control" name="rut" value="{{ form_data.rut }}">
+        </div>
+        <div class="mb-2">
+            <label class="form-label">Nombre</label>
+            <input type="text" class="form-control" name="nombre" value="{{ form_data.nombre }}">
+        </div>
+        <div class="mb-2">
+            <label class="form-label">Cargo</label>
+            <input type="text" class="form-control" name="cargo" value="{{ form_data.cargo }}">
+        </div>
+        <div class="mb-2">
+            <label class="form-label">Empresa</label>
+            <input type="text" class="form-control" name="empresa" value="{{ form_data.empresa }}">
+        </div>
+    </div>
+    <div class="col-md-6">
+        <h5>Fechas y horas</h5>
+        <div class="mb-2">
+            <label class="form-label">Registro de entrega</label>
+            <input type="text" class="form-control" name="entrega_at"
+                   value="{{ form_data.entrega_at }}"
+                   placeholder="YYYY-MM-DD HH:MM:SS">
+        </div>
+        <div class="mb-2">
+            <label class="form-label">Registro de devolución</label>
+            <input type="text" class="form-control" name="devolucion_at"
+                   value="{{ form_data.devolucion_at }}"
+                   placeholder="YYYY-MM-DD HH:MM:SS">
+        </div>
+        <p class="text-muted small">
+            Si dejas “Registro de devolución” vacío, se considera que la tarjeta queda entregada.
+        </p>
+    </div>
+
+    <div class="mt-3">
+        <button type="submit" class="btn btn-primary">Guardar</button>
+        <a href="{{ url_for('category_view', category_code=category_code) }}" class="btn btn-secondary">
+            Volver
+        </a>
+    </div>
+</form>
+{% endblock %}
