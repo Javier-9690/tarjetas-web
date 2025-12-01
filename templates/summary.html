@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Resumen - Gestor de Tarjetas{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3>Resumen por categoría</h3>
+    <a href="{{ url_for('export_summary_excel') }}" class="btn btn-sm btn-success">
+        Exportar a Excel
+    </a>
+</div>
+
+<table class="table table-striped table-bordered">
+    <thead class="table-light">
+    <tr>
+        <th>Categoría</th>
+        <th>Total</th>
+        <th>Activas</th>
+        <th>Inactivas</th>
+        <th>Pendientes de entrega</th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for row in summary_rows %}
+    <tr>
+        <td>{{ row.category }}</td>
+        <td>{{ row.total }}</td>
+        <td>{{ row.activas }}</td>
+        <td>{{ row.inactivas }}</td>
+        <td>{{ row.pendientes }}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% endblock %}
