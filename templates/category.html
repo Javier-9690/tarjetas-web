@@ -3,102 +3,108 @@
 
 {% block content %}
 <div class="row mt-4">
-  <!-- Sidebar de módulos -->
+  <!-- Sidebar de módulos (columna izquierda) -->
   <div class="col-lg-3 mb-3">
-    <div class="sidebar">
-      <h5 class="mb-3">
-        <i class="fa fa-layer-group me-2"></i>Módulos del Sistema
-      </h5>
-      <div class="list-group">
-        {% for cat in categories %}
-          <a href="{{ url_for('category_view', category_code=cat) }}"
-             class="list-group-item list-group-item-action {% if cat == category_code %}active{% endif %}">
-            <div class="d-flex justify-content-between align-items-center">
-              <span>
-                {% if cat == "MODULO" %}
-                  <i class="fa fa-id-card-clip me-2"></i>Módulo
-                {% elif cat == "MAESTRA" %}
-                  <i class="fa fa-id-card me-2"></i>Maestra
-                {% elif cat == "MANTENCION" %}
-                  <i class="fa fa-tools me-2"></i>Mantención
-                {% elif cat == "PROVISORIA" %}
-                  <i class="fa fa-clock me-2"></i>Provisoria
-                {% else %}
-                  {{ cat }}
-                {% endif %}
-              </span>
-              <small>Tarjetas</small>
-            </div>
-          </a>
-        {% endfor %}
+    <div class="card h-100">
+      <div class="card-header d-flex align-items-center">
+        <i class="fa fa-table-cells me-2"></i>
+        <span>Módulos del Sistema</span>
       </div>
-
-      <hr>
-
-      <a href="{{ url_for('summary') }}" class="btn btn-outline-secondary btn-sm w-100">
-        <i class="fa fa-chart-pie me-1"></i> Ver resumen general
-      </a>
+      <div class="card-body p-0">
+        <div class="list-group list-group-flush">
+          {% for cat in categories %}
+            <a href="{{ url_for('category_view', category_code=cat) }}"
+               class="list-group-item list-group-item-action {% if cat == category_code %}active{% endif %}">
+              {% if cat == "MODULO" %}
+                <i class="fa fa-id-card-clip me-2"></i>Módulo
+              {% elif cat == "MAESTRA" %}
+                <i class="fa fa-id-card me-2"></i>Maestra
+              {% elif cat == "MANTENCION" %}
+                <i class="fa fa-tools me-2"></i>Mantención
+              {% elif cat == "PROVISORIA" %}
+                <i class="fa fa-clock me-2"></i>Provisoria
+              {% else %}
+                {{ cat }}
+              {% endif %}
+            </a>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="card-footer text-center">
+        <a href="{{ url_for('summary') }}" class="btn btn-outline-secondary btn-sm w-100">
+          <i class="fa fa-chart-pie me-1"></i> Ver resumen general
+        </a>
+      </div>
     </div>
   </div>
 
-  <!-- Contenido principal -->
+  <!-- Panel principal (columna derecha) -->
   <div class="col-lg-9">
     <div class="content-container">
+      <!-- Título del panel -->
       <h2 class="page-title">
-        <i class="fa fa-id-card-alt me-2"></i>
-        Gestión de Tarjetas
-        <small class="text-muted ms-2">Categoría: {{ category_code }}</small>
+        Panel de Gestión
       </h2>
 
-      <!-- Barra de importación / exportación -->
-      <div class="filter-card mb-3">
-        <div class="row g-2 align-items-center">
-          <!-- Plantilla -->
-          <div class="col-md-auto mb-2 mb-md-0">
-            <a class="btn btn-outline-primary btn-sm"
-               href="{{ url_for('export_cards_template', category_code=category_code) }}">
-              <i class="fa fa-download me-1"></i> Descargar Plantilla
-            </a>
-          </div>
-
-          <!-- Importar Excel -->
-          <div class="col-md-6 col-lg-5 mb-2 mb-md-0">
-            <form class="d-flex gap-2"
-                  method="post"
-                  action="{{ url_for('import_cards_excel', category_code=category_code) }}"
-                  enctype="multipart/form-data">
-              <input type="file"
-                     name="excel_file"
-                     class="form-control form-control-sm"
-                     accept=".xlsx,.xls"
-                     required>
-              <button type="submit" class="btn btn-primary-custom btn-sm">
-                <i class="fa fa-upload me-1"></i> Importar
-              </button>
-            </form>
-          </div>
-
-          <!-- Exportar tarjetas -->
-          <div class="col-md-auto ms-md-auto text-md-end">
-            <a class="btn btn-outline-success btn-sm"
-               href="{{ url_for('export_cards_excel', category_code=category_code) }}">
-              <i class="fa fa-file-excel me-1"></i> Exportar tarjetas
-            </a>
-          </div>
-        </div>
-      </div>
-
-      <!-- Formulario nueva tarjeta -->
+      <!-- Tarjeta estilo "Registro de Censo" -->
       <div class="card mb-4">
-        <div class="card-header">
-          <i class="fa fa-plus-circle me-1"></i> Registrar nueva tarjeta
+        <!-- Barra azul superior -->
+        <div class="card-header d-flex justify-content-between align-items-center"
+             style="background-color:#1f4e9a; color:#fff;">
+          <div>
+            <i class="fa fa-id-card-alt me-2"></i>
+            Registro de Tarjetas
+          </div>
+          <span class="badge bg-light text-dark">
+            Categoría: {{ category_code }}
+          </span>
         </div>
+
+        <!-- Cuerpo del registro -->
         <div class="card-body">
+          <!-- Fila superior: plantilla / archivo / importar / exportar -->
+          <div class="row g-2 align-items-center mb-4">
+            <!-- Descargar plantilla -->
+            <div class="col-md-auto">
+              <a class="btn btn-outline-primary btn-sm"
+                 href="{{ url_for('export_cards_template', category_code=category_code) }}">
+                <i class="fa fa-download me-1"></i> Descargar Plantilla
+              </a>
+            </div>
+
+            <!-- Input archivo + botón importar -->
+            <div class="col-md-6 col-lg-5">
+              <form class="d-flex gap-2"
+                    method="post"
+                    action="{{ url_for('import_cards_excel', category_code=category_code) }}"
+                    enctype="multipart/form-data">
+                <input type="file"
+                       name="excel_file"
+                       class="form-control form-control-sm"
+                       accept=".xlsx,.xls"
+                       required>
+                <button type="submit" class="btn btn-primary-custom btn-sm">
+                  <i class="fa fa-upload me-1"></i> Importar
+                </button>
+              </form>
+            </div>
+
+            <!-- Exportar tarjetas -->
+            <div class="col-md-auto ms-md-auto text-md-end">
+              <a class="btn btn-outline-success btn-sm"
+                 href="{{ url_for('export_cards_excel', category_code=category_code) }}">
+                <i class="fa fa-file-excel me-1"></i> Exportar tarjetas
+              </a>
+            </div>
+          </div>
+
+          <!-- Formulario de registro (similar a los campos de "censo" pero para tarjetas) -->
           <form method="post" action="{{ url_for('category_view', category_code=category_code) }}">
             <input type="hidden" name="action" value="add">
-            <div class="row">
+
+            <div class="row g-3">
               {% for field_name, label in fields %}
-                <div class="col-md-6 mb-3">
+                <div class="col-md-6">
                   <label class="form-label">{{ label }}</label>
                   <input type="text"
                          name="{{ field_name }}"
@@ -106,7 +112,7 @@
                          autocomplete="off">
                 </div>
               {% endfor %}
-              <div class="col-md-4 mb-3">
+              <div class="col-md-4">
                 <label class="form-label">Activa / Inactiva</label>
                 <select name="status" class="form-select form-select-sm">
                   <option value="Activa" selected>Activa</option>
@@ -114,111 +120,115 @@
                 </select>
               </div>
             </div>
-            <div class="text-end">
+
+            <div class="mt-4">
               <button type="submit" class="btn btn-primary-custom">
-                <i class="fa fa-save me-1"></i> Guardar tarjeta
+                <i class="fa fa-save me-1"></i> Guardar Registro
               </button>
             </div>
           </form>
         </div>
       </div>
 
-      <!-- Filtro y tabla de tarjetas -->
-      <div class="d-flex justify-content-between align-items-center mb-2">
-        <h5 class="mb-0">
-          <i class="fa fa-table me-1"></i> Tarjetas registradas
-        </h5>
-        <form class="d-flex align-items-center" method="get">
-          <label class="me-2 mb-0">Ver:</label>
-          <select name="status"
-                  class="form-select form-select-sm"
-                  onchange="this.form.submit()">
-            <option value="Todas" {% if status_filter == 'Todas' %}selected{% endif %}>Todas</option>
-            <option value="Entregadas" {% if status_filter == 'Entregadas' %}selected{% endif %}>Entregadas</option>
-            <option value="Devueltas" {% if status_filter == 'Devueltas' %}selected{% endif %}>Devueltas</option>
-          </select>
-        </form>
-      </div>
+      <!-- Tabla de tarjetas registradas (parte inferior, como en tu diseño general) -->
+      <div class="card">
+        <div class="card-header">
+          <div class="d-flex justify-content-between align-items-center">
+            <span><i class="fa fa-table me-1"></i> Tarjetas registradas</span>
+            <form class="d-flex align-items-center" method="get">
+              <label class="me-2 mb-0">Ver:</label>
+              <select name="status"
+                      class="form-select form-select-sm"
+                      onchange="this.form.submit()">
+                <option value="Todas" {% if status_filter == 'Todas' %}selected{% endif %}>Todas</option>
+                <option value="Entregadas" {% if status_filter == 'Entregadas' %}selected{% endif %}>Entregadas</option>
+                <option value="Devueltas" {% if status_filter == 'Devueltas' %}selected{% endif %}>Devueltas</option>
+              </select>
+            </form>
+          </div>
+        </div>
 
-      <p class="text-muted small mb-2">
-        Mostrando {{ rows|length }} registros.
-      </p>
-
-      <div class="table-responsive">
-        <table class="data-table table align-middle">
-          <thead>
-            <tr>
-              {% for field_name, label in fields %}
-                <th>{{ label }}</th>
-              {% endfor %}
-              <th>Activa / Inactiva</th>
-              <th>Estado</th>
-              <th style="width: 170px;">Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% if rows %}
-              {% for r in rows %}
+        <div class="card-body p-0">
+          <p class="text-muted small px-3 pt-3 mb-1">
+            Mostrando {{ rows|length }} registros.
+          </p>
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0 data-table">
+              <thead>
                 <tr>
-                  {% for v in r.values %}
-                    <td>{{ v }}</td>
+                  {% for field_name, label in fields %}
+                    <th>{{ label }}</th>
                   {% endfor %}
-                  <td>
-                    <span class="badge rounded-pill
-                      {% if r.card.status == 'Activa' %}bg-success{% else %}bg-secondary{% endif %}">
-                      {{ r.card.status or 'Activa' }}
-                    </span>
-                  </td>
-                  <td>{{ r.estado_texto }}</td>
-                  <td>
-                    <div class="table-actions">
-                      <!-- Entrega / Devolución -->
-                      <a href="{{ url_for('deliver_card',
-                                          category_code=category_code,
-                                          card_id=r.card.id) }}"
-                         class="btn btn-sm btn-outline-primary"
-                         title="Registrar entrega/devolución">
-                        <i class="fa fa-people-arrows"></i>
-                      </a>
-
-                      <!-- Historial -->
-                      <a href="{{ url_for('card_history',
-                                          category_code=category_code,
-                                          card_id=r.card.id) }}"
-                         class="btn btn-sm btn-outline-secondary"
-                         title="Ver historial">
-                        <i class="fa fa-clock-rotate-left"></i>
-                      </a>
-
-                      <!-- Eliminar -->
-                      <form method="post"
-                            action="{{ url_for('delete_card',
-                                               category_code=category_code,
-                                               card_id=r.card.id) }}"
-                            class="d-inline"
-                            onsubmit="return confirm('¿Eliminar esta tarjeta?');">
-                        <button type="submit"
-                                class="btn btn-sm btn-outline-danger"
-                                title="Eliminar tarjeta">
-                          <i class="fa fa-trash"></i>
-                        </button>
-                      </form>
-                    </div>
-                  </td>
+                  <th>Activa / Inactiva</th>
+                  <th>Estado</th>
+                  <th style="width: 170px;">Acciones</th>
                 </tr>
-              {% endfor %}
-            {% else %}
-              <tr>
-                <td colspan="{{ fields|length + 3 }}" class="text-center text-muted py-4">
-                  No hay tarjetas registradas para esta categoría.
-                </td>
-              </tr>
-            {% endif %}
-          </tbody>
-        </table>
+              </thead>
+              <tbody>
+                {% if rows %}
+                  {% for r in rows %}
+                    <tr>
+                      {% for v in r.values %}
+                        <td>{{ v }}</td>
+                      {% endfor %}
+                      <td>
+                        <span class="badge rounded-pill
+                          {% if r.card.status == 'Activa' %}bg-success{% else %}bg-secondary{% endif %}">
+                          {{ r.card.status or 'Activa' }}
+                        </span>
+                      </td>
+                      <td>{{ r.estado_texto }}</td>
+                      <td>
+                        <div class="table-actions">
+                          <!-- Entrega / Devolución -->
+                          <a href="{{ url_for('deliver_card',
+                                              category_code=category_code,
+                                              card_id=r.card.id) }}"
+                             class="btn btn-sm btn-outline-primary"
+                             title="Registrar entrega/devolución">
+                            <i class="fa fa-people-arrows"></i>
+                          </a>
+
+                          <!-- Historial -->
+                          <a href="{{ url_for('card_history',
+                                              category_code=category_code,
+                                              card_id=r.card.id) }}"
+                             class="btn btn-sm btn-outline-secondary"
+                             title="Ver historial">
+                            <i class="fa fa-clock-rotate-left"></i>
+                          </a>
+
+                          <!-- Eliminar -->
+                          <form method="post"
+                                action="{{ url_for('delete_card',
+                                                   category_code=category_code,
+                                                   card_id=r.card.id) }}"
+                                class="d-inline"
+                                onsubmit="return confirm('¿Eliminar esta tarjeta?');">
+                            <button type="submit"
+                                    class="btn btn-sm btn-outline-danger"
+                                    title="Eliminar tarjeta">
+                              <i class="fa fa-trash"></i>
+                            </button>
+                          </form>
+                        </div>
+                      </td>
+                    </tr>
+                  {% endfor %}
+                {% else %}
+                  <tr>
+                    <td colspan="{{ fields|length + 3 }}" class="text-center text-muted py-4">
+                      No hay tarjetas registradas para esta categoría.
+                    </td>
+                  </tr>
+                {% endif %}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
 
-    </div>
-  </div>
+    </div> <!-- /content-container -->
+  </div> <!-- /col-lg-9 -->
 </div>
 {% endblock %}
