@@ -230,12 +230,12 @@
         </li>
         <li class="nav-item">
           <a class="nav-link {% if request.endpoint == 'registros' %}active{% endif %}"
-             href="{{ url_for('registros') }}">
+             href="{{ url_for('card_history') }}">
             <i class="fa-solid fa-database"></i> Registros
           </a>
         </li>
         <li class="nav-item">
-          <a class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}"
+          <a class="nav-link {% if request.endpoint == 'card_history' %}active{% endif %}"
              href="{{ url_for('dashboard') }}">
             <i class="fa-solid fa-chart-bar"></i> Dashboard
           </a>
