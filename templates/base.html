@@ -222,20 +222,25 @@
 
     <div class="collapse navbar-collapse" id="topNav">
       <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+        <!-- PANEL (resume general) -->
         <li class="nav-item">
-          <a class="nav-link {% if request.endpoint == 'index' %}active{% endif %}"
-             href="{{ url_for('index') }}">
+          <a class="nav-link {% if request.endpoint == 'summary' %}active{% endif %}"
+             href="{{ url_for('summary') }}">
             <i class="fa-solid fa-circle-nodes"></i> Panel
           </a>
         </li>
+
+        <!-- REGISTROS (historial completo de la categoría MODULO por defecto) -->
         <li class="nav-item">
-          <a class="nav-link {% if request.endpoint == 'registros' %}active{% endif %}"
-             href="{{ url_for('card_history') }}">
+          <a class="nav-link {% if request.endpoint in ['category_full_history', 'card_history'] %}active{% endif %}"
+             href="{{ url_for('category_full_history', category_code='MODULO') }}">
             <i class="fa-solid fa-database"></i> Registros
           </a>
         </li>
+
+        <!-- DASHBOARD (por ahora reutiliza el resumen, pero tiene endpoint propio) -->
         <li class="nav-item">
-          <a class="nav-link {% if request.endpoint == 'card_history' %}active{% endif %}"
+          <a class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}"
              href="{{ url_for('dashboard') }}">
             <i class="fa-solid fa-chart-bar"></i> Dashboard
           </a>
@@ -248,14 +253,14 @@
 <!-- CONTENIDO -->
 <main class="container-fluid px-4">
   <!-- Mensajes flash -->
-  {% with messages = get_flashed_messages() %}
+  {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
-      <div class="alert alert-info alert-dismissible fade show mt-3" role="alert">
-        {% for m in messages %}
-          <div>{{ m }}</div>
-        {% endfor %}
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
-      </div>
+      {% for category, m in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show mt-3" role="alert">
+          {{ m }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+        </div>
+      {% endfor %}
     {% endif %}
   {% endwith %}
 
