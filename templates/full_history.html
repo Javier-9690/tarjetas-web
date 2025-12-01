@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Historial - {{ category_code }}{% endblock %}
+
+{% block content %}
+<h3>Historial de entregas / devoluciones</h3>
+
+{% if card %}
+<p>
+    Categoría: <strong>{{ category_code }}</strong><br>
+    Tarjeta N°: <strong>{{ card.numero_tarjeta or card.id }}</strong>
+</p>
+{% else %}
+<p>
+    Categoría: <strong>{{ category_code }}</strong> — Historial completo
+</p>
+{% endif %}
+
+<table class="table table-sm table-striped table-bordered">
+    <thead class="table-light">
+    <tr>
+        <th>Tarjeta N°</th>
+        <th>Rut</th>
+        <th>Nombre</th>
+        <th>Cargo</th>
+        <th>Empresa</th>
+        <th>Entrega</th>
+        <th>Devolución</th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for d in deliveries %}
+    <tr>
+        <td>{{ d.card_number or (card.numero_tarjeta if card else '') }}</td>
+        <td>{{ d.rut }}</td>
+        <td>{{ d.nombre }}</td>
+        <td>{{ d.cargo }}</td>
+        <td>{{ d.empresa }}</td>
+        <td>{{ d.entrega_at }}</td>
+        <td>{{ d.devolucion_at or '' }}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+</table>
+
+<a href="{{ url_for('category_view', category_code=category_code) }}" class="btn btn-secondary">
+    Volver a la categoría
+</a>
+{% endblock %}
