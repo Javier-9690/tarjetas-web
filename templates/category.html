@@ -1,205 +1,271 @@
 {% extends "base.html" %}
 
-{% block title %}{{ category_code }} - Sistema de gestión de tarjetas{% endblock %}
+{% block title %}Sistema de gestión de tarjetas · {{ category_code }}{% endblock %}
 
 {% block content %}
-<div class="content-container">
+<div class="content-container mt-3">
+
+  <!-- TÍTULO Y ACCIONES SUPERIORES -->
   <div class="d-flex justify-content-between align-items-center mb-3">
     <div>
       <h2 class="page-title mb-1">
-        Gestor de tarjetas · {{ category_code }}
+        Gestor de tarjetas
+        <small class="d-block text-muted fs-6">
+          Categoría {{ category_code|capitalize }}
+        </small>
       </h2>
-      <small class="text-muted">
-        Administración de tarjetas, importación / exportación y control de entregas.
-      </small>
+
+
+
+    </div>
+
+
+    <div class="d-flex gap-2">
+      <a href="{{ url_for('summary') }}" class="btn btn-outline-secondary btn-sm">
+        <i class="fa-solid fa-table-columns me-1"></i> Resumen
+      </a>
+      <a href="{{ url_for('category_full_history', category_code=category_code) }}" class="btn btn-outline-secondary btn-sm">
+        <i class="fa-solid fa-clock-rotate-left me-1"></i> Historial completo
+      </a>
+
+
+
+
     </div>
   </div>
 
-  <!-- Filtros y acciones -->
-  <div class="row mb-3">
-    <div class="col-md-4">
-      <form method="get" class="d-flex align-items-center gap-2">
-        <label for="status" class="form-label mb-0">Estado:</label>
-        <select id="status" name="status" class="form-select form-select-sm" onchange="this.form.submit()">
-          <option value="Todas" {% if status_filter == "Todas" %}selected{% endif %}>Todas</option>
-          <option value="Entregadas" {% if status_filter == "Entregadas" %}selected{% endif %}>Solo entregadas</option>
-          <option value="Devueltas" {% if status_filter == "Devueltas" %}selected{% endif %}>Solo devueltas</option>
-        </select>
-      </form>
-    </div>
-
-    <div class="col-md-8 text-md-end mt-2 mt-md-0">
-      <!-- Acciones Excel -->
-      <a href="{{ url_for('export_cards_template', category_code=category_code) }}"
-         class="btn btn-sm btn-outline-secondary me-1">
-        <i class="fa-solid fa-file-export"></i> Plantilla Excel
-      </a>
-
-      <a href="{{ url_for('export_cards_excel', category_code=category_code) }}"
-         class="btn btn-sm btn-outline-secondary me-1">
-        <i class="fa-solid fa-file-excel"></i> Exportar tarjetas
-      </a>
-
-      <form method="post"
-            action="{{ url_for('import_cards_excel', category_code=category_code) }}"
-            enctype="multipart/form-data"
-            class="d-inline-block">
-        <label class="btn btn-sm btn-outline-primary mb-0">
-          <i class="fa-solid fa-file-import"></i> Importar Excel
-          <input type="file" name="excel_file" accept=".xlsx,.xls" hidden onchange="this.form.submit()">
-        </label>
-      </form>
-    </div>
-  </div>
-
-  <!-- Formulario de alta rápida -->
-  <div class="filter-card mb-3">
-    <form method="post" class="row g-2">
-      <input type="hidden" name="action" value="add">
-      {% for field_name, label in fields %}
-        <div class="col-md-2">
-          <label class="form-label mb-1">{{ label }}</label>
-          <input type="text" name="{{ field_name }}" class="form-control form-control-sm" />
+  <div class="row g-3">
+    <!-- FORMULARIO IZQUIERDA -->
+    <div class="col-lg-4">
+      <div class="card mb-3">
+        <div class="card-header py-2">
+          <strong>Nueva tarjeta</strong>
         </div>
-      {% endfor %}
-      <div class="col-md-2">
-        <label class="form-label mb-1">Estado</label>
-        <select name="status" class="form-select form-select-sm">
-          <option value="Activa">Activa</option>
-          <option value="Inactiva">Inactiva</option>
-        </select>
-      </div>
-      <div class="col-md-2 d-flex align-items-end">
-        <button type="submit" class="btn btn-primary-custom btn-sm w-100">
-          <i class="fa-solid fa-plus"></i> Agregar tarjeta
-        </button>
-      </div>
-    </form>
-  </div>
+        <div class="card-body">
+          <form method="post" action="{{ url_for('category_view', category_code=category_code) }}">
+            <input type="hidden" name="action" value="add">
 
-  <!-- Listado y acciones masivas -->
-  <form id="bulkForm"
-        method="post"
-        action="{{ url_for('category_bulk_action', category_code=category_code) }}">
-
-    <div class="d-flex justify-content-between align-items-center mb-2">
-      <div>
-        <strong id="selectedCount">0</strong> tarjetas seleccionadas
-      </div>
-      <div class="d-flex gap-2">
-        <button type="submit"
-                name="bulk_action"
-                value="deliver"
-                class="btn btn-sm btn-outline-primary">
-          <i class="fa-solid fa-id-card"></i> Entrega / devolución múltiple
-        </button>
-        <button type="submit"
-                name="bulk_action"
-                value="delete"
-                class="btn btn-sm btn-outline-danger"
-                onclick="return confirm('¿Seguro que deseas eliminar las tarjetas seleccionadas?');">
-          <i class="fa-solid fa-trash"></i> Eliminar seleccionadas
-        </button>
-      </div>
-    </div>
-
-    <div class="table-responsive">
-      <table class="table table-sm table-hover data-table align-middle">
-        <thead>
-          <tr>
-            <th style="width: 32px;">
-              <input type="checkbox" id="selectAll" />
-            </th>
-            {% for _, label in fields %}
-              <th>{{ label }}</th>
+            {% for field_name, label in fields %}
+              <div class="mb-2">
+                <label class="form-label mb-1">{{ label }}</label>
+                <input type="text" name="{{ field_name }}" class="form-control form-control-sm">
+              </div>
             {% endfor %}
-            <th>Estado actual</th>
-            <th style="width: 180px;">Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for r in rows %}
-            <tr>
-              <td>
-                <input type="checkbox"
-                       class="card-checkbox"
-                       name="card_ids"
-                       value="{{ r.card.id }}">
-              </td>
-              {% for v in r.values %}
-                <td>{{ v }}</td>
-              {% endfor %}
-              <td>{{ r.estado_texto }}</td>
-              <td>
-                <div class="table-actions">
-                  <a href="{{ url_for('card_history', category_code=category_code, card_id=r.card.id) }}"
-                     class="btn btn-sm btn-outline-secondary"
-                     title="Ver historial">
-                    <i class="fa-solid fa-clock-rotate-left"></i>
-                  </a>
-                  <a href="{{ url_for('deliver_card', category_code=category_code, card_id=r.card.id) }}"
-                     class="btn btn-sm btn-outline-primary"
-                     title="Registrar entrega / devolución">
-                    <i class="fa-solid fa-id-card"></i>
-                  </a>
-                  <button type="submit"
-                          class="btn btn-sm btn-outline-danger"
-                          title="Eliminar tarjeta"
-                          formaction="{{ url_for('delete_card', category_code=category_code, card_id=r.card.id) }}"
-                          formmethod="post"
-                          onclick="return confirm('¿Eliminar esta tarjeta?');">
-                    <i class="fa-solid fa-trash"></i>
-                  </button>
-                </div>
-              </td>
-            </tr>
-          {% else %}
-            <tr>
-              <td colspan="{{ fields|length + 3 }}" class="text-center text-muted">
-                No hay tarjetas registradas en esta categoría.
-              </td>
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+
+            <div class="mb-3">
+              <label class="form-label mb-1">Activa / Inactiva</label>
+              <select name="status" class="form-select form-select-sm">
+                <option value="Activa" selected>Activa</option>
+                <option value="Inactiva">Inactiva</option>
+              </select>
+            </div>
+
+
+
+
+
+            <button type="submit" class="btn btn-primary-custom btn-sm">
+              <i class="fa-solid fa-plus me-1"></i> Agregar tarjeta
+            </button>
+          </form>
+
+
+
+
+        </div>
+
+
+
+
+
+
+
+
+
+
+
+
+      </div>
+
+
+
+      <!-- IMPORTAR / EXPORTAR EXCEL -->
+      <div class="card">
+        <div class="card-header py-2">
+          <strong>Importar / Exportar Excel</strong>
+        </div>
+        <div class="card-body">
+          <form method="post"
+                enctype="multipart/form-data"
+                action="{{ url_for('import_cards_excel', category_code=category_code) }}"
+                class="mb-2">
+            <div class="mb-2">
+              <input type="file"
+                     name="excel_file"
+                     class="form-control form-control-sm"
+                     accept=".xlsx,.xls">
+            </div>
+            <button type="submit" class="btn btn-outline-primary btn-sm w-100">
+              <i class="fa-solid fa-file-import me-1"></i> Importar tarjetas
+            </button>
+          </form>
+
+          <div class="d-flex flex-column gap-2">
+            <a href="{{ url_for('export_cards_excel', category_code=category_code) }}"
+               class="btn btn-outline-success btn-sm w-100">
+              <i class="fa-solid fa-file-excel me-1"></i> Exportar tarjetas
+            </a>
+            <a href="{{ url_for('export_cards_template', category_code=category_code) }}"
+               class="btn btn-outline-secondary btn-sm w-100">
+              <i class="fa-solid fa-file-circle-plus me-1"></i> Descargar plantilla
+            </a>
+          </div>
+        </div>
+      </div>
     </div>
-  </form>
+
+    <!-- TABLA DERECHA: OCUPA TODO EL ANCHO RESTANTE -->
+    <div class="col-lg-8">
+      <!-- Filtro de estado arriba de la tabla -->
+      <div class="filter-card mb-2">
+        <form class="row g-2 align-items-center"
+              method="get"
+              action="{{ url_for('category_view', category_code=category_code) }}">
+          <div class="col-auto">
+            <label for="statusFilter" class="col-form-label col-form-label-sm">
+              Ver:
+            </label>
+          </div>
+          <div class="col-auto">
+            <select id="statusFilter" name="status" class="form-select form-select-sm">
+              <option value="Todas" {{ 'selected' if status_filter == 'Todas' else '' }}>Todas</option>
+              <option value="Entregadas" {{ 'selected' if status_filter == 'Entregadas' else '' }}>Entregadas</option>
+              <option value="Devueltas" {{ 'selected' if status_filter == 'Devueltas' else '' }}>Devueltas</option>
+            </select>
+          </div>
+          <div class="col-auto">
+            <button class="btn btn-outline-secondary btn-sm" type="submit">
+              <i class="fa-solid fa-rotate me-1"></i> Aplicar
+            </button>
+          </div>
+          <div class="col text-end">
+            <span class="text-muted small">
+              {{ rows|length }} registro{{ '' if rows|length == 1 else 's' }}
+            </span>
+          </div>
+        </form>
+      </div>
+
+
+      <!-- Tabla de tarjetas -->
+      <div class="table-responsive">
+        <table class="table table-sm align-middle data-table mb-0">
+          <thead>
+
+
+
+
+
+
+
+
+
+
+
+
+            <tr>
+              {% for _, label in fields %}
+                <th>{{ label }}</th>
+
+
+
+
+
+
+              {% endfor %}
+              <th>Activa / Inactiva</th>
+              <th>Estado</th>
+              <th class="text-center">Acciones</th>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+            </tr>
+          </thead>
+          <tbody>
+            {% if rows %}
+              {% for r in rows %}
+                <tr>
+                  {# AQUÍ ESTABA EL ERROR: usar r["values"] en lugar de r.values #}
+                  {% for v in r["values"] %}
+                    <td>{{ v }}</td>
+                  {% endfor %}
+                  <td>{{ r.card.status or 'Activa' }}</td>
+                  <td>{{ r.estado_texto }}</td>
+                  <td class="text-center">
+                    <div class="table-actions justify-content-center">
+                      <!-- Entrega / devolución -->
+                      <a href="{{ url_for('deliver_card',
+                                          category_code=category_code,
+                                          card_id=r.card.id) }}"
+                         class="btn btn-outline-primary btn-sm"
+                         title="Entrega / devolución">
+                        <i class="fa-solid fa-person-walking-arrow-right"></i>
+                      </a>
+
+                      <!-- Historial -->
+                      <a href="{{ url_for('card_history',
+                                          category_code=category_code,
+                                          card_id=r.card.id) }}"
+                         class="btn btn-outline-secondary btn-sm"
+                         title="Historial">
+                        <i class="fa-solid fa-clock-rotate-left"></i>
+                      </a>
+
+                      <!-- Eliminar -->
+                      <form method="post"
+                            action="{{ url_for('delete_card',
+                                               category_code=category_code,
+                                               card_id=r.card.id) }}"
+                            onsubmit="return confirm('¿Eliminar esta tarjeta?');"
+                            class="d-inline">
+                        <button type="submit"
+                                class="btn btn-outline-danger btn-sm"
+                                title="Eliminar">
+                          <i class="fa-solid fa-trash"></i>
+                        </button>
+                      </form>
+                    </div>
+                  </td>
+                </tr>
+              {% endfor %}
+            {% else %}
+              <tr>
+                <td colspan="{{ fields|length + 3 }}" class="text-center text-muted small py-3">
+                  No hay tarjetas registradas en esta categoría.
+                </td>
+              </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
 </div>
-{% endblock %}
-
-{% block extra_js %}
-<script>
-  (function () {
-    const selectAll = document.getElementById('selectAll');
-    const checkboxes = document.querySelectorAll('.card-checkbox');
-    const selectedCount = document.getElementById('selectedCount');
-
-    function updateCount() {
-      let count = 0;
-      checkboxes.forEach(cb => { if (cb.checked) count++; });
-      selectedCount.textContent = count;
-    }
-
-    if (selectAll) {
-      selectAll.addEventListener('change', function () {
-        checkboxes.forEach(cb => { cb.checked = selectAll.checked; });
-        updateCount();
-      });
-    }
-
-    checkboxes.forEach(cb => {
-      cb.addEventListener('change', function () {
-        if (!cb.checked && selectAll.checked) {
-          selectAll.checked = false;
-        } else if (cb.checked) {
-          const allChecked = Array.from(checkboxes).every(x => x.checked);
-          selectAll.checked = allChecked;
-        }
-        updateCount();
-      });
-    });
-
-    updateCount();
-  })();
-</script>
 {% endblock %}
