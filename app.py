@@ -231,7 +231,7 @@ def create_app():
         passwords = Password.query.order_by(Password.id.asc()).all()
         return render_template("passwords.html", passwords=passwords)
 
-    # ---------- RESUMEN POR CATEGORÍA (PANEL) ----------
+    # ---------- RESUMEN POR CATEGORÍA ----------
 
     @app.route("/summary")
     @login_required
@@ -265,14 +265,6 @@ def create_app():
             summary_rows=summary_rows,
             categories=CATEGORY_ORDER,
         )
-
-    # ---------- DASHBOARD (alias de momento al resumen) ----------
-
-    @app.route("/dashboard")
-    @login_required
-    def dashboard():
-        # De momento reutiliza la misma vista que el resumen general.
-        return summary()
 
     @app.route("/export/summary.xlsx")
     @login_required
@@ -375,6 +367,48 @@ def create_app():
             categories=CATEGORY_ORDER,
         )
 
+    # ---------- ACCIONES MASIVAS EN TARJETAS (ELIMINAR / ENTREGA MÚLTIPLE) ----------
+
+    @app.route("/category/<category_code>/bulk", methods=["POST"])
+    @login_required
+    def category_bulk_action(category_code):
+        if category_code not in CATEGORY_DEFINITIONS:
+            abort(404)
+
+        ids = request.form.getlist("card_ids")
+        if not ids:
+            flash("Debes seleccionar al menos una tarjeta.", "warning")
+            return redirect(url_for("category_view", category_code=category_code))
+
+        action = request.form.get("bulk_action")
+
+        if action == "delete":
+            cards = Card.query.filter(
+                Card.category == category_code,
+                Card.id.in_(ids),
+            ).all()
+
+            if not cards:
+                flash("No se encontraron tarjetas para eliminar.", "warning")
+                return redirect(url_for("category_view", category_code=category_code))
+
+            count = len(cards)
+            for c in cards:
+                db.session.delete(c)
+            db.session.commit()
+            flash(f"Se eliminaron {count} tarjetas.", "success")
+            return redirect(url_for("category_view", category_code=category_code))
+
+        elif action == "deliver":
+            ids_str = ",".join(ids)
+            return redirect(
+                url_for("deliver_cards_multi", category_code=category_code, ids=ids_str)
+            )
+
+        else:
+            flash("Acción masiva no reconocida.", "warning")
+            return redirect(url_for("category_view", category_code=category_code))
+
     # ---------- IMPORTAR TARJETAS DESDE EXCEL ----------
 
     @app.route("/category/<category_code>/import", methods=["POST"])
@@ -398,13 +432,11 @@ def create_app():
         imported = 0
 
         for row in df.to_dict(orient="records"):
-            # Si todas las celdas están vacías, se omite la fila
             if not any(str(v).strip() for v in row.values()):
                 continue
 
             card = Card(category=category_code)
 
-            # Mapear columnas "humanas" a campos de BD
             for field_name, label in fields:
                 value = str(row.get(label, "")).strip()
                 if value.lower() == "nan":
@@ -450,6 +482,7 @@ def create_app():
             row["Activa / Inactiva"] = card.status or "Activa"
             rows.append(row)
 
+        # Siempre devolvemos archivo, aunque no haya tarjetas (solo encabezados)
         column_labels = [label for _, label in fields] + ["Activa / Inactiva"]
         df = pd.DataFrame(rows, columns=column_labels)
 
@@ -508,7 +541,7 @@ def create_app():
         flash("Tarjeta eliminada.", "success")
         return redirect(url_for("category_view", category_code=category_code))
 
-    # ---------- ENTREGA / DEVOLUCIÓN ----------
+    # ---------- ENTREGA / DEVOLUCIÓN INDIVIDUAL ----------
 
     @app.route(
         "/category/<category_code>/<int:card_id>/deliver",
@@ -619,6 +652,134 @@ def create_app():
             last_open=last_open,
             last_any=last_any,
             category_code=category_code,
+        )
+
+    # ---------- ENTREGA / DEVOLUCIÓN MÚLTIPLE ----------
+
+    @app.route("/category/<category_code>/deliver-multi", methods=["GET", "POST"])
+    @login_required
+    def deliver_cards_multi(category_code):
+        if category_code not in CATEGORY_DEFINITIONS:
+            abort(404)
+
+        # ids puede llegar por querystring (?ids=1,2,3) o por POST
+        ids_str = request.values.get("ids", "")
+        if not ids_str:
+            flash("No se recibieron tarjetas seleccionadas.", "warning")
+            return redirect(url_for("category_view", category_code=category_code))
+
+        try:
+            id_list = [int(x) for x in ids_str.split(",") if x.strip()]
+        except ValueError:
+            flash("Lista de tarjetas inválida.", "danger")
+            return redirect(url_for("category_view", category_code=category_code))
+
+        cards = (
+            Card.query.filter(
+                Card.category == category_code,
+                Card.id.in_(id_list),
+            )
+            .order_by(Card.id.asc())
+            .all()
+        )
+
+        if not cards:
+            flash("No se encontraron tarjetas seleccionadas.", "warning")
+            return redirect(url_for("category_view", category_code=category_code))
+
+        if request.method == "POST":
+            rut = request.form.get("rut", "").strip()
+            nombre = request.form.get("nombre", "").strip()
+            cargo = request.form.get("cargo", "").strip()
+            empresa = request.form.get("empresa", "").strip()
+            entrega_str = request.form.get("entrega_at", "").strip()
+            devolucion_str = request.form.get("devolucion_at", "").strip()
+
+            if not rut or not nombre:
+                flash("RUT y Nombre son obligatorios.", "warning")
+                return redirect(
+                    url_for("deliver_cards_multi", category_code=category_code, ids=ids_str)
+                )
+
+            def parse_dt_str(s: str) -> Optional[datetime]:
+                if not s:
+                    return None
+                try:
+                    return datetime.strptime(s, "%Y-%m-%d %H:%M:%S")
+                except Exception:
+                    return None
+
+            now = datetime.utcnow()
+            entrega_at = parse_dt_str(entrega_str) or now
+            devolucion_at = parse_dt_str(devolucion_str)
+
+            affected = 0
+            for card in cards:
+                last_open = get_last_open_delivery(card)
+                if last_open:
+                    last_open.rut = rut
+                    last_open.nombre = nombre
+                    last_open.cargo = cargo
+                    last_open.empresa = empresa
+                    last_open.entrega_at = entrega_at
+                    last_open.devolucion_at = devolucion_at
+                    affected += 1
+                else:
+                    d = Delivery(
+                        category=category_code,
+                        card_id=card.id,
+                        card_number=card.numero_tarjeta or "",
+                        rut=rut,
+                        nombre=nombre,
+                        cargo=cargo,
+                        empresa=empresa,
+                        entrega_at=entrega_at,
+                        devolucion_at=devolucion_at,
+                    )
+                    db.session.add(d)
+                    affected += 1
+
+            db.session.commit()
+            flash(
+                f"Se registró entrega/devolución para {affected} tarjetas.",
+                "success",
+            )
+            return redirect(url_for("category_view", category_code=category_code))
+
+        # GET: prellenar campos usando el último historial de la primera tarjeta
+        now_str = format_dt(datetime.utcnow())
+        form_data = {
+            "rut": "",
+            "nombre": "",
+            "cargo": "",
+            "empresa": "",
+            "entrega_at": now_str,
+            "devolucion_at": "",
+        }
+
+        first_card = cards[0]
+        last_any = (
+            Delivery.query.filter_by(category=category_code, card_id=first_card.id)
+            .order_by(Delivery.entrega_at.asc())
+            .all()
+        )
+        last_any = last_any[-1] if last_any else None
+        if last_any:
+            form_data["rut"] = last_any.rut or ""
+            form_data["nombre"] = last_any.nombre or ""
+            form_data["cargo"] = last_any.cargo or ""
+            form_data["empresa"] = last_any.empresa or ""
+            form_data["entrega_at"] = format_dt(last_any.entrega_at)
+            form_data["devolucion_at"] = format_dt(last_any.devolucion_at)
+
+        ids_joined = ",".join(str(c.id) for c in cards)
+
+        return render_template(
+            "deliver_multi.html",
+            cards=cards,
+            form_data=form_data,
+            category_code=category_code,
+            ids_str=ids_joined,
         )
 
     # ---------- HISTORIAL POR TARJETA ----------
