@@ -266,12 +266,11 @@ def create_app():
             categories=CATEGORY_ORDER,
         )
 
-    # ---------- DASHBOARD (alias de momento al resumen) ----------
+    # ---------- DASHBOARD (por ahora reutiliza el resumen) ----------
 
     @app.route("/dashboard")
     @login_required
     def dashboard():
-        # De momento reutiliza la misma vista que el resumen general.
         return summary()
 
     @app.route("/export/summary.xlsx")
@@ -375,48 +374,6 @@ def create_app():
             categories=CATEGORY_ORDER,
         )
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     # ---------- IMPORTAR TARJETAS DESDE EXCEL ----------
 
     @app.route("/category/<category_code>/import", methods=["POST"])
@@ -492,7 +449,6 @@ def create_app():
             row["Activa / Inactiva"] = card.status or "Activa"
             rows.append(row)
 
-
         column_labels = [label for _, label in fields] + ["Activa / Inactiva"]
         df = pd.DataFrame(rows, columns=column_labels)
 
@@ -538,7 +494,7 @@ def create_app():
             ),
         )
 
-    # ---------- ELIMINAR TARJETA ----------
+    # ---------- ELIMINAR TARJETA (individual) ----------
 
     @app.route(
         "/category/<category_code>/<int:card_id>/delete", methods=["POST"]
@@ -551,7 +507,50 @@ def create_app():
         flash("Tarjeta eliminada.", "success")
         return redirect(url_for("category_view", category_code=category_code))
 
-    # ---------- ENTREGA / DEVOLUCIÓN ----------
+    # ---------- ELIMINAR TARJETAS (múltiple) ----------
+
+    @app.route("/category/<category_code>/bulk-delete", methods=["POST"])
+    @login_required
+    def bulk_delete_cards(category_code):
+        if category_code not in CATEGORY_DEFINITIONS:
+            abort(404)
+
+        raw_ids = request.form.getlist("card_ids")
+        if not raw_ids:
+            flash("Debe seleccionar al menos una tarjeta para eliminar.", "warning")
+            return redirect(url_for("category_view", category_code=category_code))
+
+        ids = []
+        for cid in raw_ids:
+            try:
+                ids.append(int(cid))
+            except (TypeError, ValueError):
+                continue
+
+        if not ids:
+            flash("Selección de tarjetas no válida.", "warning")
+            return redirect(url_for("category_view", category_code=category_code))
+
+        cards = (
+            Card.query.filter(
+                Card.category == category_code,
+                Card.id.in_(ids),
+            ).all()
+        )
+
+        if not cards:
+            flash("No se encontraron tarjetas para eliminar.", "warning")
+            return redirect(url_for("category_view", category_code=category_code))
+
+        count = len(cards)
+        for card in cards:
+            db.session.delete(card)
+        db.session.commit()
+
+        flash(f"Se eliminaron {count} tarjeta(s).", "success")
+        return redirect(url_for("category_view", category_code=category_code))
+
+    # ---------- ENTREGA / DEVOLUCIÓN (individual) ----------
 
     @app.route(
         "/category/<category_code>/<int:card_id>/deliver",
@@ -664,133 +663,139 @@ def create_app():
             category_code=category_code,
         )
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    # ---------- ENTREGA / DEVOLUCIÓN (múltiple) ----------
+
+    @app.route("/category/<category_code>/deliver-multi", methods=["POST"])
+    @login_required
+    def deliver_cards_multi(category_code):
+        if category_code not in CATEGORY_DEFINITIONS:
+            abort(404)
+
+        raw_ids = request.form.getlist("card_ids")
+        if not raw_ids:
+            flash("Debe seleccionar al menos una tarjeta.", "warning")
+            return redirect(url_for("category_view", category_code=category_code))
+
+        ids = []
+        for cid in raw_ids:
+            try:
+                ids.append(int(cid))
+            except (TypeError, ValueError):
+                continue
+
+        if not ids:
+            flash("Selección de tarjetas no válida.", "warning")
+            return redirect(url_for("category_view", category_code=category_code))
+
+        cards = (
+            Card.query.filter(
+                Card.category == category_code,
+                Card.id.in_(ids),
+            )
+            .order_by(Card.id.asc())
+            .all()
+        )
+
+        if not cards:
+            flash("No se encontraron tarjetas para la selección indicada.", "warning")
+            return redirect(url_for("category_view", category_code=category_code))
+
+        # Para mostrar info de estado actual en la vista
+        card_rows = []
+        for card in cards:
+            estado, _ = compute_card_status(card)
+            card_rows.append({"card": card, "estado_texto": estado})
+
+        stage = request.form.get("stage")
+
+        # Segunda fase: guardar datos
+        if stage == "save":
+            now = datetime.utcnow()
+
+            rut = request.form.get("rut", "").strip()
+            nombre = request.form.get("nombre", "").strip()
+            cargo = request.form.get("cargo", "").strip()
+            empresa = request.form.get("empresa", "").strip()
+            entrega_str = request.form.get("entrega_at", "").strip()
+            devolucion_str = request.form.get("devolucion_at", "").strip()
+
+            if not rut or not nombre:
+                flash("RUT y Nombre son obligatorios.", "warning")
+                form_data = {
+                    "rut": rut,
+                    "nombre": nombre,
+                    "cargo": cargo,
+                    "empresa": empresa,
+                    "entrega_at": entrega_str or format_dt(now),
+                    "devolucion_at": devolucion_str,
+                }
+                return render_template(
+                    "deliver_multi.html",
+                    category_code=category_code,
+                    card_rows=card_rows,
+                    form_data=form_data,
+                )
+
+            def parse_dt_str(s: str) -> Optional[datetime]:
+                if not s:
+                    return None
+                try:
+                    return datetime.strptime(s, "%Y-%m-%d %H:%M:%S")
+                except Exception:
+                    return None
+
+            entrega_at = parse_dt_str(entrega_str) or now
+            devolucion_at = parse_dt_str(devolucion_str)
+
+            updated = 0
+            for card in cards:
+                last_open = get_last_open_delivery(card)
+                if last_open:
+                    last_open.rut = rut
+                    last_open.nombre = nombre
+                    last_open.cargo = cargo
+                    last_open.empresa = empresa
+                    last_open.entrega_at = entrega_at
+                    last_open.devolucion_at = devolucion_at
+                else:
+                    d = Delivery(
+                        category=category_code,
+                        card_id=card.id,
+                        card_number=card.numero_tarjeta or "",
+                        rut=rut,
+                        nombre=nombre,
+                        cargo=cargo,
+                        empresa=empresa,
+                        entrega_at=entrega_at,
+                        devolucion_at=devolucion_at,
+                    )
+                    db.session.add(d)
+                updated += 1
+
+            db.session.commit()
+            flash(
+                f"Registro de entrega / devolución guardado para {updated} tarjeta(s).",
+                "success",
+            )
+            return redirect(url_for("category_view", category_code=category_code))
+
+        # Primera fase: mostrar formulario con tarjetas seleccionadas
+        now_str = format_dt(datetime.utcnow())
+        form_data = {
+            "rut": "",
+            "nombre": "",
+            "cargo": "",
+            "empresa": "",
+            "entrega_at": now_str,
+            "devolucion_at": "",
+        }
+
+        return render_template(
+            "deliver_multi.html",
+            category_code=category_code,
+            card_rows=card_rows,
+            form_data=form_data,
+        )
 
     # ---------- HISTORIAL POR TARJETA ----------
 
