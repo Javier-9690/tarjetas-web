@@ -61,11 +61,10 @@
       opacity: .9;
     }
 
-    /* LOGOS (mismo tamaño para ambos) */
     .system-logo,
     .system-logo-escondida {
-      height: 40px;          /* referencia: logo Aramark */
-      max-width: 160px;
+      height: 40px;
+      max-height: 40px;
       object-fit: contain;
     }
 
@@ -210,7 +209,7 @@
   </div>
 </header>
 
-<!-- NAVBAR: ahora son las categorías/módulos -->
+<!-- NAVBAR -->
 <nav class="navbar navbar-expand-lg navbar-dark main-navbar">
   <div class="container-fluid px-4">
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
@@ -219,49 +218,33 @@
       <span class="navbar-toggler-icon"></span>
     </button>
 
-    {% set current_category = (
-         request.view_args.get('category_code')
-         if request.view_args is defined and request.view_args
-         and 'category_code' in request.view_args
-         else None
-       )
-    %}
-
     <div class="collapse navbar-collapse" id="topNav">
       <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-
-        <!-- MODULO -->
+        <!-- Panel = resumen general -->
         <li class="nav-item">
-          <a class="nav-link {% if current_category == 'MODULO' %}active{% endif %}"
-             href="{{ url_for('category_view', category_code='MODULO') }}">
-            <i class="fa-solid fa-circle-nodes"></i> Módulo
+          <a class="nav-link {% if request.endpoint == 'summary' %}active{% endif %}"
+             href="{{ url_for('summary') }}">
+            <i class="fa-solid fa-circle-nodes"></i> Panel
           </a>
         </li>
 
-        <!-- MAESTRA -->
+        <!-- Registros = módulo MAESTRA -->
         <li class="nav-item">
-          <a class="nav-link {% if current_category == 'MAESTRA' %}active{% endif %}"
+          <a class="nav-link
+                    {% if request.endpoint == 'category_view' and category_code == 'MAESTRA' %}active{% endif %}"
              href="{{ url_for('category_view', category_code='MAESTRA') }}">
-            <i class="fa-solid fa-database"></i> Maestra
+            <i class="fa-solid fa-database"></i> Registros
           </a>
         </li>
 
-        <!-- MANTENCION -->
+        <!-- Dashboard = módulo MANTENCION (puedes cambiar por otra categoría si prefieres) -->
         <li class="nav-item">
-          <a class="nav-link {% if current_category == 'MANTENCION' %}active{% endif %}"
+          <a class="nav-link
+                    {% if request.endpoint == 'category_view' and category_code == 'MANTENCION' %}active{% endif %}"
              href="{{ url_for('category_view', category_code='MANTENCION') }}">
-            <i class="fa-solid fa-screwdriver-wrench"></i> Mantención
+            <i class="fa-solid fa-chart-bar"></i> Dashboard
           </a>
         </li>
-
-        <!-- PROVISORIA -->
-        <li class="nav-item">
-          <a class="nav-link {% if current_category == 'PROVISORIA' %}active{% endif %}"
-             href="{{ url_for('category_view', category_code='PROVISORIA') }}">
-            <i class="fa-solid fa-id-card"></i> Provisoria
-          </a>
-        </li>
-
       </ul>
     </div>
   </div>
@@ -272,12 +255,14 @@
   <!-- Mensajes flash -->
   {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
-      {% for category, m in messages %}
-        <div class="alert alert-{{ category }} alert-dismissible fade show mt-3" role="alert">
-          {{ m }}
-          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
-        </div>
-      {% endfor %}
+      <div class="mt-3">
+        {% for category, m in messages %}
+          <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            {{ m }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+          </div>
+        {% endfor %}
+      </div>
     {% endif %}
   {% endwith %}
 
