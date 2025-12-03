@@ -41,15 +41,6 @@
       padding: 0.75rem 0;
     }
 
-    .system-header .brand-text {
-      font-weight: 700;
-      letter-spacing: .03em;
-      font-size: 1.1rem;
-    }
-    .brand-escondida { color: #ff7f00; }
-    .brand-separator { margin: 0 .25rem; }
-    .brand-bhp { color: #ff7f00; }
-
     .system-title h1 {
       font-size: 1.6rem;
       margin: 0;
@@ -61,8 +52,9 @@
       opacity: .9;
     }
 
-    /* LOGO (único) */
-    .system-logo-escondida {
+    /* LOGOS (Escondida izquierda, Aramark derecha) */
+    .system-logo-escondida,
+    .system-logo-aramark {
       height: 40px;
       max-width: 160px;
       object-fit: contain;
@@ -181,22 +173,25 @@
 <!-- HEADER SUPERIOR -->
 <header class="system-header">
   <div class="container-fluid px-4">
-    <div class="d-flex flex-column flex-md-row align-items-center justify-content-center gap-3">
-      <div class="d-flex align-items-center gap-2">
-        <!-- Logo Escondida BHP (único) -->
+    <div class="d-flex align-items-center justify-content-between">
+      <!-- Izquierda: Escondida BHP (solo una vez) -->
+      <div class="d-flex align-items-center">
         <img src="{{ url_for('static', filename='Escondida.png') }}"
              alt="Escondida BHP"
              class="system-logo-escondida">
-        <span class="brand-text">
-          <span class="brand-escondida">ESCONDIDA</span>
-          <span class="brand-separator">|</span>
-          <span class="brand-bhp">BHP</span>
-        </span>
       </div>
 
-      <div class="system-title text-center">
+      <!-- Centro: título -->
+      <div class="system-title text-center flex-grow-1">
         <h1>Sistema de gestión de tarjetas</h1>
         <p>Plataforma Integral de Operaciones</p>
+      </div>
+
+      <!-- Derecha: Aramark -->
+      <div class="d-flex align-items-center justify-content-end">
+        <img src="{{ url_for('static', filename='Aramark.png') }}"
+             alt="Aramark"
+             class="system-logo-aramark">
       </div>
     </div>
   </div>
