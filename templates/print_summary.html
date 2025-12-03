@@ -4,28 +4,27 @@
 
 {% block extra_head %}
 <style>
-  /* Configuración de página A4 para impresión */
+  /* Página A4 horizontal (landscape) */
   @page {
-    size: A4 portrait;
-    margin: 15mm;
+    size: A4 landscape;
+    margin: 10mm;
   }
 
-  .print-section {
+  /* Contenedor general de cada página de impresión */
+  .print-page {
     margin-bottom: 2rem;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;  /* para empujar las firmas al fondo */
   }
 
-  .print-section h3 {
-    font-size: 1.1rem;
-    font-weight: 600;
-  }
-
-  .print-table-title {
+  .print-page-title {
     font-size: 1.2rem;
     font-weight: 600;
     margin-bottom: 0.75rem;
+    text-align: center;
   }
 
-  /* Tablas más compactas en impresión */
   .data-table {
     font-size: 0.8rem;
     border-collapse: collapse;
@@ -44,13 +43,18 @@
     background-color: #f5f5f5;
   }
 
-  /* Evitar cortes feos de filas en medio de página */
   .data-table tr {
     page-break-inside: avoid;
   }
 
+  /* Zona de firmas al fondo de la página */
+  .print-page-body {
+    flex: 1 0 auto;  /* contenido ocupa el espacio superior */
+  }
+
   .signature-box {
-    margin-top: 2.5rem;
+    margin-top: auto;   /* se pega al fondo de la página */
+    padding-top: 1rem;
   }
 
   .signature-line {
@@ -83,11 +87,11 @@
       padding: 0;
     }
 
-    .print-section {
+    .print-page {
       page-break-after: always;
     }
 
-    .print-section:last-of-type {
+    .print-page:last-of-type {
       page-break-after: auto;
     }
   }
@@ -117,46 +121,48 @@
   {# ========= UNA PÁGINA POR CADA CATEGORÍA ========= #}
   {% for code in categories %}
     {% set detail = details_per_cat[code] %}
-    <div class="print-section">
-      <h3 class="text-center mb-3">
-        Estado actual de tarjetas · {{ detail.label }}
-      </h3>
+    <div class="print-page">
+      <div class="print-page-body">
+        <h3 class="print-page-title">
+          Estado actual de tarjetas · {{ detail.label }}
+        </h3>
 
-      <div class="table-responsive">
-        <table class="table table-sm align-middle data-table">
-          <thead>
-            <tr>
-              {% for _, label in detail.fields %}
-                <th>{{ label }}</th>
-              {% endfor %}
-              <th>Activa / Inactiva</th>
-              <th>Estado</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% if detail.rows %}
-              {% for r in detail.rows %}
-                <tr>
-                  {% for v in r["values"] %}
-                    <td>{{ v }}</td>
-                  {% endfor %}
-                  <td>{{ r.card.status or 'Activa' }}</td>
-                  <td>{{ r.estado_texto }}</td>
-                </tr>
-              {% endfor %}
-            {% else %}
+        <div class="table-responsive">
+          <table class="table table-sm align-middle data-table">
+            <thead>
               <tr>
-                <td colspan="{{ detail.fields|length + 2 }}"
-                    class="text-center text-muted small py-3">
-                  No hay tarjetas registradas en esta categoría.
-                </td>
+                {% for _, label in detail.fields %}
+                  <th>{{ label }}</th>
+                {% endfor %}
+                <th>Activa / Inactiva</th>
+                <th>Estado</th>
               </tr>
-            {% endif %}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {% if detail.rows %}
+                {% for r in detail.rows %}
+                  <tr>
+                    {% for v in r["values"] %}
+                      <td>{{ v }}</td>
+                    {% endfor %}
+                    <td>{{ r.card.status or 'Activa' }}</td>
+                    <td>{{ r.estado_texto }}</td>
+                  </tr>
+                {% endfor %}
+              {% else %}
+                <tr>
+                  <td colspan="{{ detail.fields|length + 2 }}"
+                      class="text-center text-muted small py-3">
+                    No hay tarjetas registradas en esta categoría.
+                  </td>
+                </tr>
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
       </div>
 
-      <!-- FIRMAS -->
+      <!-- FIRMAS, PEGADAS ABAJO -->
       <div class="row signature-box">
         <div class="col-6 text-center">
           <div class="signature-line"></div>
@@ -171,43 +177,45 @@
   {% endfor %}
 
   {# ========= ÚLTIMA PÁGINA: RESUMEN GENERAL ========= #}
-  <div class="print-section">
-    <h3 class="text-center mb-3">
-      Resumen general de tarjetas
-    </h3>
+  <div class="print-page">
+    <div class="print-page-body">
+      <h3 class="print-page-title">
+        Resumen general de tarjetas
+      </h3>
 
-    <div class="table-responsive">
-      <table class="table table-sm align-middle data-table">
-        <thead>
-          <tr>
-            <th>Categoría</th>
-            <th class="text-end">Total</th>
-            <th class="text-end">Activas</th>
-            <th class="text-end">Inactivas</th>
-            <th class="text-end">Pendientes de entrega</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for row in summary_rows %}
+      <div class="table-responsive">
+        <table class="table table-sm align-middle data-table">
+          <thead>
             <tr>
-              <td>{{ row.category_label }}</td>
-              <td class="text-end">{{ row.total }}</td>
-              <td class="text-end">{{ row.activas }}</td>
-              <td class="text-end">{{ row.inactivas }}</td>
-              <td class="text-end">{{ row.pendientes }}</td>
+              <th>Categoría</th>
+              <th class="text-end">Total</th>
+              <th class="text-end">Activas</th>
+              <th class="text-end">Inactivas</th>
+              <th class="text-end">Pendientes de entrega</th>
             </tr>
-          {% else %}
-            <tr>
-              <td colspan="5" class="text-center text-muted small py-3">
-                No hay datos registrados.
-              </td>
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {% for row in summary_rows %}
+              <tr>
+                <td>{{ row.category_label }}</td>
+                <td class="text-end">{{ row.total }}</td>
+                <td class="text-end">{{ row.activas }}</td>
+                <td class="text-end">{{ row.inactivas }}</td>
+                <td class="text-end">{{ row.pendientes }}</td>
+              </tr>
+            {% else %}
+              <tr>
+                <td colspan="5" class="text-center text-muted small py-3">
+                  No hay datos registrados.
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
     </div>
 
-    <!-- FIRMAS -->
+    <!-- FIRMAS, PEGADAS ABAJO -->
     <div class="row signature-box">
       <div class="col-6 text-center">
         <div class="signature-line"></div>
