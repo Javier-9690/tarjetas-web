@@ -9,7 +9,7 @@
     <h2 class="page-title mb-0">
       Resumen general de tarjetas
       <small class="d-block text-muted fs-6">
-        Estado actual por módulo / maestra / mantención / provisoria
+        Estado actual por módulo, maestra, mantención y provisoria
       </small>
     </h2>
 
@@ -38,9 +38,7 @@
         {% if summary_rows %}
           {% for row in summary_rows %}
             <tr>
-              <td>
-                {{ category_labels.get(row.category, row.category) }}
-              </td>
+              <td>{{ category_labels.get(row.category, row.category) }}</td>
               <td class="text-end">{{ row.total }}</td>
               <td class="text-end text-success">{{ row.activas }}</td>
               <td class="text-end text-muted">{{ row.inactivas }}</td>
