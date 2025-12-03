@@ -61,8 +61,8 @@
       opacity: .9;
     }
 
-    .system-logo,
-    .system-logo-escondida {
+    /* Logo Aramark (único logo gráfico) */
+    .system-logo {
       height: 40px;
       max-width: 160px;
       object-fit: contain;
@@ -173,21 +173,14 @@
       font-size: .9rem;
     }
 
-    /* Estilos impresión (se afinan en print_summary.html) */
+    /* IMPRESIÓN: esconder barra gris si quieres, opcional */
     @media print {
       .main-navbar,
-      .footer,
-      .no-print {
+      .footer {
         display: none !important;
       }
       body {
-        background: #ffffff;
-        padding-top: 0;
-      }
-      .content-container {
-        box-shadow: none;
-        margin: 0;
-        border-radius: 0;
+        background-color: #ffffff;
       }
     }
   </style>
@@ -200,11 +193,8 @@
 <header class="system-header">
   <div class="container-fluid px-4">
     <div class="d-flex align-items-center justify-content-between">
-      <!-- Izquierda: ESCONDIDA BHP -->
+      <!-- SOLO UNA VEZ: ESCONDIDA | BHP (texto) -->
       <div class="d-flex align-items-center gap-2">
-        <img src="{{ url_for('static', filename='Escondida.png') }}"
-             alt="Escondida"
-             class="system-logo-escondida">
         <span class="brand-text">
           <span class="brand-escondida">ESCONDIDA</span>
           <span class="brand-separator">|</span>
@@ -212,13 +202,13 @@
         </span>
       </div>
 
-      <!-- Centro: Título -->
+      <!-- TÍTULO CENTRADO -->
       <div class="system-title text-center flex-grow-1">
         <h1>Sistema de gestión de tarjetas</h1>
         <p>Plataforma Integral de Operaciones</p>
       </div>
 
-      <!-- Derecha: Aramark -->
+      <!-- LOGO ARAMARK A LA DERECHA -->
       <div>
         <img src="{{ url_for('static', filename='Aramark.png') }}"
              alt="Aramark"
@@ -228,7 +218,7 @@
   </div>
 </header>
 
-<!-- NAVBAR: categorías como módulos -->
+<!-- NAVBAR: categorías/módulos -->
 <nav class="navbar navbar-expand-lg navbar-dark main-navbar">
   <div class="container-fluid px-4">
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
@@ -280,11 +270,17 @@
           </a>
         </li>
 
-        <!-- Resumen general -->
+        <!-- RESUMEN / IMPRESIÓN (opcional en menú) -->
         <li class="nav-item">
           <a class="nav-link {% if request.endpoint == 'summary' %}active{% endif %}"
              href="{{ url_for('summary') }}">
             <i class="fa-solid fa-table-columns"></i> Resumen
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {% if request.endpoint == 'print_summary' %}active{% endif %}"
+             href="{{ url_for('print_summary') }}">
+            <i class="fa-solid fa-print"></i> Versión impresión
           </a>
         </li>
 
