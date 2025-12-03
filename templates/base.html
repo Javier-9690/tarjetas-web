@@ -52,7 +52,9 @@
       opacity: .9;
     }
 
-    .system-logo {
+    /* LOGOS (mismo tamaño para ambos) */
+    .system-logo,
+    .system-logo-escondida {
       height: 40px;
       max-width: 160px;
       object-fit: contain;
@@ -168,31 +170,34 @@
 </head>
 <body>
 
-<!-- HEADER SUPERIOR (solo logos) -->
+<!-- HEADER SUPERIOR -->
 <header class="system-header">
   <div class="container-fluid px-4">
     <div class="d-flex align-items-center justify-content-between">
-      <div>
+      <!-- Logo Escondida a la izquierda -->
+      <div class="d-flex align-items-center gap-2">
         <img src="{{ url_for('static', filename='Escondida.png') }}"
-             alt="Logo Escondida"
-             class="system-logo">
+             alt="Escondida BHP"
+             class="system-logo-escondida">
       </div>
 
+      <!-- Título centrado -->
       <div class="system-title text-center flex-grow-1">
         <h1>Sistema de gestión de tarjetas</h1>
-        <p>Plataforma integral de operaciones</p>
+        <p>Plataforma Integral de Operaciones</p>
       </div>
 
+      <!-- Logo Aramark a la derecha -->
       <div>
         <img src="{{ url_for('static', filename='Aramark.png') }}"
-             alt="Logo Aramark"
+             alt="Aramark"
              class="system-logo">
       </div>
     </div>
   </div>
 </header>
 
-<!-- NAVBAR: categorías/módulos -->
+<!-- NAVBAR PRINCIPAL -->
 <nav class="navbar navbar-expand-lg navbar-dark main-navbar">
   <div class="container-fluid px-4">
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
@@ -243,14 +248,35 @@
           </a>
         </li>
 
-        <!-- Resumen -->
+        <!-- RESUMEN GENERAL -->
         <li class="nav-item">
           <a class="nav-link {% if request.endpoint == 'summary' %}active{% endif %}"
              href="{{ url_for('summary') }}">
             <i class="fa-solid fa-table-columns"></i> Resumen
           </a>
         </li>
+
+        <!-- CLAVES (solo logueado) -->
+        {% if session.get('logged_in') %}
+        <li class="nav-item">
+          <a class="nav-link {% if request.endpoint == 'manage_passwords' %}active{% endif %}"
+             href="{{ url_for('manage_passwords') }}">
+            <i class="fa-solid fa-key"></i> Claves
+          </a>
+        </li>
+        {% endif %}
       </ul>
+
+      <!-- Botón salir (si está logueado) -->
+      {% if session.get('logged_in') %}
+      <span class="navbar-text me-2 text-light small d-none d-md-inline">
+        Sesión activa
+      </span>
+      <a href="{{ url_for('logout') }}"
+         class="btn btn-outline-light btn-sm">
+        <i class="fa-solid fa-right-from-bracket me-1"></i> Salir
+      </a>
+      {% endif %}
     </div>
   </div>
 </nav>
@@ -276,7 +302,7 @@
 <footer class="footer">
   <div class="container-fluid px-4 text-center">
     <p class="mb-0">
-      Desarrollado por Javier Rivera · &copy; {{ now.year }} · Sistema de gestión de tarjetas
+      Desarrollado por Javier Rivera · &copy; {{ (now or None) and now.year or 2025 }} · Sistema de gestión de tarjetas
     </p>
   </div>
 </footer>
