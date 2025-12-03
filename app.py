@@ -58,8 +58,17 @@ def ensure_default_passwords():
 
 # =========================
 # Definición de categorías
+# (mapeo de columnas a campos de Card)
 # =========================
-CATEGORY_ORDER = ["MODULO", "MAESTRA", "MANTENCION", "PROVISORIA"]
+CATEGORY_ORDER: List[str] = ["MODULO", "MAESTRA", "MANTENCION", "PROVISORIA"]
+
+# Etiquetas "bonitas" para usar en pantallas e impresión
+CATEGORY_LABELS = {
+    "MODULO": "Módulo",
+    "MAESTRA": "Maestra",
+    "MANTENCION": "Mantención",
+    "PROVISORIA": "Provisoria",
+}
 
 # (campo_en_BD, etiqueta_excel/HTML)
 CATEGORY_DEFINITIONS = {
@@ -94,13 +103,6 @@ CATEGORY_DEFINITIONS = {
     ],
 }
 
-CATEGORY_LABELS = {
-    "MODULO": "Módulo",
-    "MAESTRA": "Maestra",
-    "MANTENCION": "Mantención",
-    "PROVISORIA": "Provisoria",
-}
-
 
 # =========================
 # Helpers de autenticación
@@ -122,19 +124,6 @@ def format_dt(dt: Optional[datetime]) -> str:
     if not dt:
         return ""
     return dt.strftime("%Y-%m-%d %H:%M:%S")
-
-
-def parse_dt_str(s: str) -> Optional[datetime]:
-    """
-    Intenta parsear una fecha en formato 'YYYY-MM-DD HH:MM:SS'.
-    Devuelve None si viene vacía o es inválida.
-    """
-    if not s:
-        return None
-    try:
-        return datetime.strptime(s, "%Y-%m-%d %H:%M:%S")
-    except Exception:
-        return None
 
 
 def compute_card_status(card: Card):
@@ -177,18 +166,17 @@ def get_last_open_delivery(card: Card) -> Optional[Delivery]:
 
 def build_summary_rows():
     """
-    Calcula el resumen por categoría:
-    total, activas, inactivas y pendientes (entregadas sin devolución).
+    Construye el resumen por categoría
+    usado en /summary y /summary/print.
     """
     summary_rows = []
-
     for code in CATEGORY_ORDER:
         cards = Card.query.filter_by(category=code).all()
         total = len(cards)
         activas = sum(1 for c in cards if (c.status or "Activa") == "Activa")
         inactivas = total - activas
-
         pendientes = 0
+
         for c in cards:
             _, tipo = compute_card_status(c)
             if tipo == "Entregadas":
@@ -204,7 +192,6 @@ def build_summary_rows():
                 "pendientes": pendientes,
             }
         )
-
     return summary_rows
 
 
@@ -293,50 +280,29 @@ def create_app():
             "summary.html",
             summary_rows=summary_rows,
             categories=CATEGORY_ORDER,
+            category_labels=CATEGORY_LABELS,
         )
 
-    @app.route("/summary/print")
-    @login_required
-    def summary_print():
-        summary_rows = build_summary_rows()
-        today = datetime.utcnow().strftime("%d-%m-%Y %H:%M")
-        return render_template(
-            "print_summary.html",
-            summary_rows=summary_rows,
-            today=today,
-        )
-
-    # ---------- DASHBOARD (si en el futuro lo usas) ----------
+    # ---------- DASHBOARD (de momento igual al resumen) ----------
 
     @app.route("/dashboard")
     @login_required
     def dashboard():
         return summary()
 
-    # ---------- EXPORTAR RESUMEN A EXCEL ----------
-
     @app.route("/export/summary.xlsx")
     @login_required
     def export_summary_excel():
         data = []
-        for code in CATEGORY_ORDER:
-            cards = Card.query.filter_by(category=code).all()
-            total = len(cards)
-            activas = sum(1 for c in cards if (c.status or "Activa") == "Activa")
-            inactivas = total - activas
-            pendientes = 0
-            for c in cards:
-                _, tipo = compute_card_status(c)
-                if tipo == "Entregadas":
-                    pendientes += 1
-
+        summary_rows = build_summary_rows()
+        for row in summary_rows:
             data.append(
                 {
-                    "Categoría": code,
-                    "Total": total,
-                    "Activas": activas,
-                    "Inactivas": inactivas,
-                    "Pendientes de entrega": pendientes,
+                    "Categoría": row["category_label"],
+                    "Total": row["total"],
+                    "Activas": row["activas"],
+                    "Inactivas": row["inactivas"],
+                    "Pendientes de entrega": row["pendientes"],
                 }
             )
 
@@ -364,6 +330,7 @@ def create_app():
 
         fields = CATEGORY_DEFINITIONS[category_code]
 
+        # Alta de tarjeta (individual)
         if request.method == "POST":
             action = request.form.get("action")
             if action == "add":
@@ -414,6 +381,7 @@ def create_app():
             rows=rows,
             status_filter=status_filter,
             categories=CATEGORY_ORDER,
+            category_labels=CATEGORY_LABELS,
         )
 
     # ---------- IMPORTAR TARJETAS DESDE EXCEL ----------
@@ -536,7 +504,7 @@ def create_app():
             ),
         )
 
-    # ---------- ELIMINAR TARJETA (INDIVIDUAL) ----------
+    # ---------- ELIMINAR TARJETA (individual) ----------
 
     @app.route(
         "/category/<category_code>/<int:card_id>/delete", methods=["POST"]
@@ -549,42 +517,39 @@ def create_app():
         flash("Tarjeta eliminada.", "success")
         return redirect(url_for("category_view", category_code=category_code))
 
-    # ---------- ELIMINACIÓN MÚLTIPLE ----------
+    # ---------- ELIMINAR TARJETAS (múltiple) ----------
 
-    @app.route(
-        "/category/<category_code>/delete-multi", methods=["POST"]
-    )
+    @app.route("/category/<category_code>/delete-multi", methods=["POST"])
     @login_required
     def delete_cards_multi(category_code):
         if category_code not in CATEGORY_DEFINITIONS:
             abort(404)
 
-        ids_raw: List[str] = request.form.getlist("card_ids")
-        ids: List[int] = []
-        for x in ids_raw:
-            try:
-                ids.append(int(x))
-            except ValueError:
-                continue
-
+        ids = request.form.getlist("selected_cards")
         if not ids:
-            flash("Debe seleccionar al menos una tarjeta para eliminar.", "warning")
+            flash("Debe seleccionar al menos una tarjeta.", "warning")
             return redirect(url_for("category_view", category_code=category_code))
 
-        cards = Card.query.filter(
-            Card.category == category_code,
-            Card.id.in_(ids),
-        ).all()
+        deleted = 0
+        for sid in ids:
+            try:
+                cid = int(sid)
+            except ValueError:
+                continue
+            card = Card.query.filter_by(id=cid, category=category_code).first()
+            if card:
+                db.session.delete(card)
+                deleted += 1
 
-        count = len(cards)
-        for c in cards:
-            db.session.delete(c)
-        db.session.commit()
+        if deleted:
+            db.session.commit()
+            flash(f"Se eliminaron {deleted} tarjetas.", "success")
+        else:
+            flash("No se encontraron tarjetas para eliminar.", "info")
 
-        flash(f"Se eliminaron {count} tarjeta(s) seleccionadas.", "success")
         return redirect(url_for("category_view", category_code=category_code))
 
-    # ---------- ENTREGA / DEVOLUCIÓN (INDIVIDUAL) ----------
+    # ---------- ENTREGA / DEVOLUCIÓN (individual) ----------
 
     @app.route(
         "/category/<category_code>/<int:card_id>/deliver",
@@ -623,6 +588,14 @@ def create_app():
                         card_id=card_id,
                     )
                 )
+
+            def parse_dt_str(s: str) -> Optional[datetime]:
+                if not s:
+                    return None
+                try:
+                    return datetime.strptime(s, "%Y-%m-%d %H:%M:%S")
+                except Exception:
+                    return None
 
             entrega_at = parse_dt_str(entrega_str) or now
             devolucion_at = parse_dt_str(devolucion_str)
@@ -689,77 +662,18 @@ def create_app():
             category_code=category_code,
         )
 
-    # ---------- ENTREGA / DEVOLUCIÓN MÚLTIPLE ----------
+    # ---------- ENTREGA / DEVOLUCIÓN (múltiple) ----------
 
-    @app.route(
-        "/category/<category_code>/deliver-multi",
-        methods=["POST"],
-    )
+    @app.route("/category/<category_code>/deliver-multi", methods=["POST"])
     @login_required
     def deliver_cards_multi(category_code):
         if category_code not in CATEGORY_DEFINITIONS:
             abort(404)
 
-        step = request.form.get("step", "select")
-
-        # Paso 1: viene desde category.html sólo con las card_ids seleccionadas
-        if step == "select":
-            ids_raw: List[str] = request.form.getlist("card_ids")
-            ids: List[int] = []
-            for x in ids_raw:
-                try:
-                    ids.append(int(x))
-                except ValueError:
-                    continue
-
-            if not ids:
-                flash("Debe seleccionar al menos una tarjeta para la entrega/devolución múltiple.", "warning")
-                return redirect(url_for("category_view", category_code=category_code))
-
-            cards = (
-                Card.query.filter(
-                    Card.category == category_code,
-                    Card.id.in_(ids),
-                )
-                .order_by(Card.id.asc())
-                .all()
-            )
-
-            if not cards:
-                flash("No se encontraron las tarjetas seleccionadas.", "warning")
-                return redirect(url_for("category_view", category_code=category_code))
-
-            now_str = format_dt(datetime.utcnow())
-            return render_template(
-                "deliver_multi.html",
-                cards=cards,
-                category_code=category_code,
-                now_str=now_str,
-            )
-
-        # Paso 2: viene desde deliver_multi.html con datos del trabajador
-        ids_raw: List[str] = request.form.getlist("card_ids")
-        ids: List[int] = []
-        for x in ids_raw:
-            try:
-                ids.append(int(x))
-            except ValueError:
-                continue
-
+        ids = request.form.getlist("selected_cards")
         if not ids:
-            flash("No se recibieron tarjetas para la entrega/devolución múltiple.", "warning")
+            flash("Debe seleccionar al menos una tarjeta.", "warning")
             return redirect(url_for("category_view", category_code=category_code))
-
-        cards = Card.query.filter(
-            Card.category == category_code,
-            Card.id.in_(ids),
-        ).all()
-
-        if not cards:
-            flash("No se encontraron las tarjetas seleccionadas.", "warning")
-            return redirect(url_for("category_view", category_code=category_code))
-
-        now = datetime.utcnow()
 
         rut = request.form.get("rut", "").strip()
         nombre = request.form.get("nombre", "").strip()
@@ -769,22 +683,34 @@ def create_app():
         devolucion_str = request.form.get("devolucion_at", "").strip()
 
         if not rut or not nombre:
-            now_str = format_dt(now)
-            flash("RUT y Nombre son obligatorios.", "warning")
-            return render_template(
-                "deliver_multi.html",
-                cards=cards,
-                category_code=category_code,
-                now_str=entrega_str or now_str,
-            )
+            flash("RUT y Nombre son obligatorios para la entrega múltiple.", "warning")
+            return redirect(url_for("category_view", category_code=category_code))
 
+        def parse_dt_str(s: str) -> Optional[datetime]:
+            if not s:
+                return None
+            try:
+                return datetime.strptime(s, "%Y-%m-%d %H:%M:%S")
+            except Exception:
+                return None
+
+        now = datetime.utcnow()
         entrega_at = parse_dt_str(entrega_str) or now
         devolucion_at = parse_dt_str(devolucion_str)
 
         updated = 0
+        for sid in ids:
+            try:
+                cid = int(sid)
+            except ValueError:
+                continue
 
-        for card in cards:
+            card = Card.query.filter_by(id=cid, category=category_code).first()
+            if not card:
+                continue
+
             last_open = get_last_open_delivery(card)
+
             if last_open:
                 last_open.rut = rut
                 last_open.nombre = nombre
@@ -805,13 +731,18 @@ def create_app():
                     devolucion_at=devolucion_at,
                 )
                 db.session.add(d)
+
             updated += 1
 
-        db.session.commit()
-        flash(
-            f"Registro de entrega / devolución múltiple guardado para {updated} tarjeta(s).",
-            "success",
-        )
+        if updated:
+            db.session.commit()
+            flash(
+                f"Se registró entrega/devolución para {updated} tarjeta(s).",
+                "success",
+            )
+        else:
+            flash("No se actualizó ninguna tarjeta.", "info")
+
         return redirect(url_for("category_view", category_code=category_code))
 
     # ---------- HISTORIAL POR TARJETA ----------
@@ -862,6 +793,50 @@ def create_app():
             card=None,
             deliveries=filtered,
             category_code=category_code,
+        )
+
+    # ---------- RESUMEN PARA IMPRESIÓN (varias páginas) ----------
+
+    @app.route("/summary/print")
+    @login_required
+    def summary_print():
+        summary_rows = build_summary_rows()
+        today = datetime.utcnow().strftime("%d-%m-%Y %H:%M")
+
+        details_per_cat = {}
+        for code in CATEGORY_ORDER:
+            fields = CATEGORY_DEFINITIONS[code]
+            cards = (
+                Card.query.filter_by(category=code)
+                .order_by(Card.id.asc())
+                .all()
+            )
+
+            rows = []
+            for card in cards:
+                values = [getattr(card, f) or "" for f, _ in fields]
+                texto_estado, _ = compute_card_status(card)
+                rows.append(
+                    {
+                        "card": card,
+                        "values": values,
+                        "estado_texto": texto_estado,
+                    }
+                )
+
+            details_per_cat[code] = {
+                "label": CATEGORY_LABELS.get(code, code.title()),
+                "fields": fields,
+                "rows": rows,
+            }
+
+        return render_template(
+            "print_summary.html",
+            today=today,
+            summary_rows=summary_rows,
+            details_per_cat=details_per_cat,
+            categories=CATEGORY_ORDER,
+            category_labels=CATEGORY_LABELS,
         )
 
     return app
