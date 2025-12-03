@@ -1,131 +1,156 @@
-{% extends "base.html" %}
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>Sistema de gestión de tarjetas · Resumen para impresión</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-{% block title %}Versión para imprimir · Sistema de gestión de tarjetas{% endblock %}
+  <style>
+    @page {
+      size: A4 landscape;
+      margin: 1.5cm;
+    }
 
-{% block extra_head %}
-<style>
-  @page {
-    size: A4 landscape;
-    margin: 1.5cm;
-  }
+    @media print {
+      .page-break {
+        page-break-after: always;
+      }
+    }
 
-  @media print {
     body {
-      -webkit-print-color-adjust: exact;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      font-size: 11px;
+      background: #ffffff;
+      color: #111827;
     }
-    .main-navbar,
-    .footer,
-    .btn,
-    .no-print {
-      display: none !important;
-    }
-    .content-container {
-      box-shadow: none;
-      margin: 0;
-      padding: 0;
-    }
+
     .print-page {
-      min-height: 100vh;
+      width: 100%;
+    }
+
+    .print-header {
       display: flex;
-      flex-direction: column;
-      justify-content: flex-start;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.75rem;
     }
-    .signature-row {
-      margin-top: auto;
+
+    .print-header-center {
+      text-align: center;
+      flex-grow: 1;
     }
-  }
 
-  .print-wrapper {
-    margin-top: 1rem;
-  }
+    .print-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin: 0;
+    }
 
-  .print-page {
-    page-break-after: always;
-    padding: 0.5rem 0;
-  }
-  .print-page:last-of-type {
-    page-break-after: auto;
-  }
+    .print-meta {
+      font-size: 10px;
+      margin-top: 0.2rem;
+      line-height: 1.2;
+    }
 
-  .print-title {
-    text-align: center;
-    font-size: 1.3rem;
-    font-weight: 600;
-    margin-bottom: 0.25rem;
-  }
+    .print-logo {
+      height: 38px;
+      max-width: 150px;
+      object-fit: contain;
+    }
 
-  .print-subtitle {
-    text-align: center;
-    font-size: 0.95rem;
-    color: #555;
-    margin-bottom: 0.75rem;
-  }
+    .section-title {
+      font-size: 14px;
+      font-weight: 600;
+      margin: 0 0 0.4rem 0;
+    }
 
-  .print-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.8rem;
-  }
-  .print-table th,
-  .print-table td {
-    border: 1px solid #ccc;
-    padding: 0.25rem 0.35rem;
-  }
-  .print-table thead th {
-    background-color: #f0f2f5;
-  }
+    .table-print {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 10px;
+    }
 
-  .signature-row {
-    margin-top: 2.5rem;
-    display: flex;
-    justify-content: space-around;
-  }
-  .signature-box {
-    width: 40%;
-    text-align: center;
-    padding-top: 2.5rem;
-  }
-  .signature-line {
-    border-top: 1px solid #000;
-    margin-bottom: .25rem;
-  }
-  .signature-role {
-    font-size: 0.85rem;
-  }
-</style>
-{% endblock %}
+    .table-print thead th {
+      border: 1px solid #000;
+      padding: 3px 4px;
+      background: #f3f4f6;
+      font-weight: 600;
+    }
 
-{% block content %}
-<div class="content-container print-wrapper">
+    .table-print tbody td {
+      border: 1px solid #000;
+      padding: 2px 4px;
+    }
 
-  {# 1) Páginas de detalle por categoría #}
-  {% for code in ["MODULO", "MAESTRA", "MANTENCION", "PROVISORIA"] %}
-    {% set rows = category_rows.get(code, []) %}
-    <section class="print-page">
-      <div>
-        <div class="print-title">
-          Detalle de tarjetas — {{ category_labels.get(code, code) }}
+    .table-print tbody tr:nth-child(even) {
+      background: #fafafa;
+    }
+
+    .signatures {
+      margin-top: 2.5rem;
+      display: flex;
+      justify-content: space-around;
+      gap: 3rem;
+    }
+
+    .signature-block {
+      width: 40%;
+      text-align: center;
+      font-size: 11px;
+    }
+
+    .signature-line {
+      border-top: 1px solid #000;
+      margin-bottom: 0.4rem;
+      margin-top: 2.5rem;
+    }
+
+    .signature-label {
+      font-weight: 500;
+    }
+  </style>
+</head>
+<body>
+  {% set logo_escondida = url_for('static', filename='Escondida.png') %}
+  {% set logo_aramark = url_for('static', filename='Aramark.png') %}
+
+  {# 1 página por cada categoría con detalle #}
+  {% for code in category_order %}
+    <section class="print-page page-break">
+      <div class="print-header">
+        <div>
+          <img src="{{ logo_escondida }}" class="print-logo" alt="">
         </div>
-        <div class="print-subtitle">
-          Estado actual de las tarjetas registradas
+        <div class="print-header-center">
+          <p class="print-title">Sistema de gestión de tarjetas</p>
+          <p class="print-meta">
+            Estado de tarjetas – {{ category_labels[code] }}<br>
+            Fecha y hora de emisión: {{ generated_at }}
+          </p>
+        </div>
+        <div>
+          <img src="{{ logo_aramark }}" class="print-logo" alt="">
         </div>
       </div>
 
-      <table class="print-table">
+      <h3 class="section-title">Detalle de tarjetas – {{ category_labels[code] }}</h3>
+
+      <table class="table-print">
         <thead>
           <tr>
-            {% for field_name, label in category_definitions[code] %}
+            {% for _, label in category_definitions[code] %}
               <th>{{ label }}</th>
             {% endfor %}
             <th>Activa / Inactiva</th>
-            <th>Estado actual</th>
+            <th>Estado</th>
           </tr>
         </thead>
         <tbody>
+          {% set rows = categories_data[code] %}
           {% if rows %}
             {% for r in rows %}
               <tr>
-                {% for v in r.values_list %}
+                {% for v in r["values"] %}
                   <td>{{ v }}</td>
                 {% endfor %}
                 <td>{{ r.status }}</td>
@@ -135,7 +160,7 @@
           {% else %}
             <tr>
               <td colspan="{{ category_definitions[code]|length + 2 }}"
-                  class="text-center">
+                  style="text-align:center;">
                 Sin tarjetas registradas en esta categoría.
               </td>
             </tr>
@@ -145,58 +170,64 @@
     </section>
   {% endfor %}
 
-  {# 2) Última página: resumen general + firmas #}
+  {# Última página: resumen general + firmas #}
   <section class="print-page">
-    <div>
-      <div class="print-title">
-        Resumen general de tarjetas
+    <div class="print-header">
+      <div>
+        <img src="{{ logo_escondida }}" class="print-logo" alt="">
       </div>
-      <div class="print-subtitle">
-        Totales por categoría
+      <div class="print-header-center">
+        <p class="print-title">Sistema de gestión de tarjetas</p>
+        <p class="print-meta">
+          Resumen general de estado de tarjetas<br>
+          Fecha y hora de emisión: {{ generated_at }}
+        </p>
+      </div>
+      <div>
+        <img src="{{ logo_aramark }}" class="print-logo" alt="">
       </div>
     </div>
 
-    <table class="print-table">
+    <h3 class="section-title">Resumen por categoría</h3>
+
+    <table class="table-print">
       <thead>
         <tr>
           <th>Categoría</th>
           <th>Total</th>
           <th>Activas</th>
           <th>Inactivas</th>
-          <th>Pendientes de devolución</th>
+          <th>Pendientes (entregadas)</th>
         </tr>
       </thead>
       <tbody>
-        {% if summary_rows %}
-          {% for row in summary_rows %}
-            <tr>
-              <td>{{ category_labels.get(row.category, row.category) }}</td>
-              <td>{{ row.total }}</td>
-              <td>{{ row.activas }}</td>
-              <td>{{ row.inactivas }}</td>
-              <td>{{ row.pendientes }}</td>
-            </tr>
-          {% endfor %}
-        {% else %}
+        {% for row in summary_rows %}
           <tr>
-            <td colspan="5" class="text-center">
-              No hay información disponible.
-            </td>
+            <td>{{ category_labels[row.category] }}</td>
+            <td>{{ row.total }}</td>
+            <td>{{ row.activas }}</td>
+            <td>{{ row.inactivas }}</td>
+            <td>{{ row.pendientes }}</td>
           </tr>
-        {% endif %}
+        {% endfor %}
       </tbody>
     </table>
 
-    <div class="signature-row">
-      <div class="signature-box">
+    <div class="signatures">
+      <div class="signature-block">
         <div class="signature-line"></div>
-        <div class="signature-role">Administradora hotelera</div>
+        <div class="signature-label">Administradora hotelera</div>
       </div>
-      <div class="signature-box">
+      <div class="signature-block">
         <div class="signature-line"></div>
-        <div class="signature-role">Supervisor hotelero</div>
+        <div class="signature-label">Supervisor hotelero</div>
       </div>
     </div>
   </section>
-</div>
-{% endblock %}
+
+  <script>
+    // Lanza la impresión automáticamente al abrir la vista
+    window.print();
+  </script>
+</body>
+</html>
