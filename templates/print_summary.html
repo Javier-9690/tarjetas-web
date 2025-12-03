@@ -1,198 +1,190 @@
 {% extends "base.html" %}
 
-{% block title %}Versión para impresión · Sistema de gestión de tarjetas{% endblock %}
+{% block title %}Versión para imprimir · Sistema de gestión de tarjetas{% endblock %}
 
 {% block extra_head %}
 <style>
-  /* Página A4 horizontal */
+  /* Página horizontal para impresión */
   @page {
     size: A4 landscape;
-    margin: 10mm;
+    margin: 1.5cm;
   }
 
   @media print {
+    body {
+      -webkit-print-color-adjust: exact;
+    }
+    .main-navbar,
+    .footer,
+    .btn,
+    .no-print {
+      display: none !important;
+    }
     .content-container {
-      box-shadow: none !important;
-      margin: 0 !important;
-      border-radius: 0 !important;
+      box-shadow: none;
+      margin: 0;
+      padding: 0;
     }
   }
 
+  .print-wrapper {
+    margin-top: 1rem;
+  }
+
   .print-page {
-    margin-bottom: 2rem;
-    page-break-inside: avoid;
-  }
-
-  .page-break {
     page-break-after: always;
+    padding: 0.5rem 0;
+  }
+  .print-page:last-of-type {
+    page-break-after: auto;
   }
 
-  .print-page-title {
-    font-size: 1.2rem;
-    font-weight: 600;
-    margin-bottom: 0.75rem;
+  .print-title {
     text-align: center;
-  }
-
-  .data-table {
-    font-size: 0.8rem;
-    border-collapse: collapse;
-    width: 100%;
-  }
-
-  .data-table thead th,
-  .data-table tbody td {
-    padding: 0.25rem 0.35rem;
-    border-bottom: 1px solid #ddd;
-  }
-
-  .data-table thead th {
-    border-top: 1px solid #000;
-    border-bottom: 2px solid #000;
-    background-color: #f3f4f6;
-    text-align: left;
-  }
-
-  .data-table tbody tr:nth-child(even) {
-    background-color: #f9fafb;
-  }
-
-  /* Última página: firmas al fondo */
-  .print-page-summary {
-    display: flex;
-    flex-direction: column;
-    min-height: 100vh;
-  }
-
-  .summary-table-wrapper {
-    flex: 0 0 auto;
-  }
-
-  .print-signatures {
-    margin-top: auto;
-    padding-top: 2rem;
-  }
-
-  .signature-block {
-    width: 35%;
-  }
-
-  .signature-line {
-    border-top: 1px solid #000;
-    margin-top: 3rem;
+    font-size: 1.3rem;
+    font-weight: 600;
     margin-bottom: 0.25rem;
   }
 
-  .signature-name {
-    font-size: 0.9rem;
+  .print-subtitle {
+    text-align: center;
+    font-size: 0.95rem;
+    color: #555;
+    margin-bottom: 0.75rem;
+  }
+
+  .print-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8rem;
+  }
+  .print-table th,
+  .print-table td {
+    border: 1px solid #ccc;
+    padding: 0.25rem 0.35rem;
+  }
+  .print-table thead th {
+    background-color: #f0f2f5;
+  }
+
+  .signature-row {
+    margin-top: 2.5rem;
+    display: flex;
+    justify-content: space-around;
+  }
+  .signature-box {
+    width: 40%;
+    text-align: center;
+    padding-top: 2.5rem;
+  }
+  .signature-line {
+    border-top: 1px solid #000;
+    margin-bottom: .25rem;
+  }
+  .signature-role {
+    font-size: 0.85rem;
   }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="content-container mt-3">
+<div class="content-container print-wrapper">
 
-  <!-- Título general de la impresión -->
-  <div class="text-center mb-4">
-    <h2 class="page-title mb-1">Versión para impresión</h2>
-    <small class="text-muted">
-      Estado actual de las tarjetas registradas por categoría
-    </small>
-  </div>
+  {# 1) Páginas de detalle por categoría (en orden) #}
+  {% for code in ["MODULO", "MAESTRA", "MANTENCION", "PROVISORIA"] %}
+    {% set rows = category_rows.get(code, []) %}
+    <section class="print-page">
+      <div class="print-title">
+        Detalle de tarjetas — {{ category_labels.get(code, code) }}
+      </div>
+      <div class="print-subtitle">
+        Estado actual de las tarjetas registradas
+      </div>
 
-  {# 1) DETALLE POR CADA CATEGORÍA: una página por código #}
-  {% for code in category_cards.keys() %}
-    {% set rows = category_cards[code] %}
-    <div class="print-page">
-      <h3 class="print-page-title">
-        Detalle de tarjetas · Categoría {{ category_labels.get(code, code) }}
-      </h3>
-
-      <table class="data-table">
+      <table class="print-table">
         <thead>
           <tr>
-            {% for field_name, label in category_fields[code] %}
+            {% for field_name, label in category_definitions[code] %}
               <th>{{ label }}</th>
             {% endfor %}
             <th>Activa / Inactiva</th>
-            <th>Estado</th>
+            <th>Estado actual</th>
           </tr>
         </thead>
         <tbody>
           {% if rows %}
             {% for r in rows %}
               <tr>
-                {% for v in r["values"] %}
+                {% for v in r.values_list %}
                   <td>{{ v }}</td>
                 {% endfor %}
-                <td>{{ r.card.status or 'Activa' }}</td>
+                <td>{{ r.status }}</td>
                 <td>{{ r.estado_texto }}</td>
               </tr>
             {% endfor %}
           {% else %}
             <tr>
-              <td colspan="{{ category_fields[code]|length + 2 }}"
-                  class="text-center text-muted">
-                No hay tarjetas registradas en esta categoría.
+              <td colspan="{{ category_definitions[code]|length + 2 }}"
+                  class="text-center">
+                Sin tarjetas registradas en esta categoría.
               </td>
             </tr>
           {% endif %}
         </tbody>
       </table>
-    </div>
-
-    {% if not loop.last %}
-      <div class="page-break"></div>
-    {% endif %}
+    </section>
   {% endfor %}
 
-  {# 2) ÚLTIMA PÁGINA: resumen general + firmas #}
-  <div class="page-break"></div>
+  {# 2) Última página: resumen general + firmas #}
+  <section class="print-page">
+    <div class="print-title">
+      Resumen general de tarjetas
+    </div>
+    <div class="print-subtitle">
+      Totales por categoría
+    </div>
 
-  <div class="print-page print-page-summary">
-    <div class="summary-table-wrapper">
-      <h3 class="print-page-title">
-        Resumen general de tarjetas por categoría
-      </h3>
-
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th>Categoría</th>
-            <th>Total</th>
-            <th>Activas</th>
-            <th>Inactivas</th>
-            <th>Pendientes de entrega</th>
-          </tr>
-        </thead>
-        <tbody>
+    <table class="print-table">
+      <thead>
+        <tr>
+          <th>Categoría</th>
+          <th>Total</th>
+          <th>Activas</th>
+          <th>Inactivas</th>
+          <th>Pendientes de devolución</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if summary_rows %}
           {% for row in summary_rows %}
             <tr>
-              <td>{{ row.label }}</td>
+              <td>{{ category_labels.get(row.category, row.category) }}</td>
               <td>{{ row.total }}</td>
               <td>{{ row.activas }}</td>
               <td>{{ row.inactivas }}</td>
               <td>{{ row.pendientes }}</td>
             </tr>
           {% endfor %}
-        </tbody>
-      </table>
-    </div>
+        {% else %}
+          <tr>
+            <td colspan="5" class="text-center">
+              No hay información disponible.
+            </td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
 
-    <!-- FIRMAS SOLO EN ESTA ÚLTIMA HOJA -->
-    <div class="print-signatures">
-      <div class="d-flex justify-content-between">
-        <div class="signature-block text-center">
-          <div class="signature-line"></div>
-          <div class="signature-name">Administradora hotelera</div>
-        </div>
-        <div class="signature-block text-center">
-          <div class="signature-line"></div>
-          <div class="signature-name">Supervisor hotelero</div>
-        </div>
+    <div class="signature-row">
+      <div class="signature-box">
+        <div class="signature-line"></div>
+        <div class="signature-role">Administradora hotelera</div>
+      </div>
+      <div class="signature-box">
+        <div class="signature-line"></div>
+        <div class="signature-role">Supervisor hotelero</div>
       </div>
     </div>
-  </div>
-
+  </section>
 </div>
 {% endblock %}
