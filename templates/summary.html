@@ -1,63 +1,59 @@
 {% extends "base.html" %}
 
-{% block title %}Sistema de gestión de tarjetas · Resumen{% endblock %}
+{% block title %}Resumen general · Sistema de gestión de tarjetas{% endblock %}
 
 {% block content %}
 <div class="content-container mt-3">
+  <!-- Título y botón de impresión -->
   <div class="d-flex justify-content-between align-items-center mb-3">
     <h2 class="page-title mb-0">
       Resumen general de tarjetas
+      <small class="d-block text-muted fs-6">
+        Estado actual por módulo / maestra / mantención / provisoria
+      </small>
     </h2>
+
     <div class="d-flex gap-2">
-      <a href="{{ url_for('summary_print') }}"
-         class="btn btn-primary-custom btn-sm">
-        <i class="fa-solid fa-print me-1"></i> Versión para impresión
-      </a>
-      <a href="{{ url_for('export_summary_excel') }}"
-         class="btn btn-outline-success btn-sm">
-        <i class="fa-solid fa-file-excel me-1"></i> Exportar a Excel
+      <a href="{{ url_for('print_summary') }}"
+         target="_blank"
+         class="btn btn-outline-primary btn-sm">
+        <i class="fa-solid fa-print me-1"></i> Versión para imprimir
       </a>
     </div>
   </div>
 
-  <p class="text-muted small mb-3">
-    Resumen del estado actual de las tarjetas registradas en todos los módulos.
-  </p>
-
+  <!-- Tabla de resumen -->
   <div class="table-responsive">
-    <table class="table table-sm align-middle data-table">
+    <table class="table table-sm align-middle data-table mb-0">
       <thead>
         <tr>
           <th>Categoría</th>
           <th class="text-end">Total</th>
           <th class="text-end">Activas</th>
           <th class="text-end">Inactivas</th>
-          <th class="text-end">Pendientes de entrega</th>
-          <th class="text-center">Ir al módulo</th>
+          <th class="text-end">Pendientes de devolución</th>
         </tr>
       </thead>
       <tbody>
-        {% for row in summary_rows %}
-          <tr>
-            <td>{{ row.category_label }}</td>
-            <td class="text-end">{{ row.total }}</td>
-            <td class="text-end">{{ row.activas }}</td>
-            <td class="text-end">{{ row.inactivas }}</td>
-            <td class="text-end">{{ row.pendientes }}</td>
-            <td class="text-center">
-              <a href="{{ url_for('category_view', category_code=row.category) }}"
-                 class="btn btn-outline-primary btn-sm">
-                <i class="fa-solid fa-arrow-right"></i>
-              </a>
-            </td>
-          </tr>
+        {% if summary_rows %}
+          {% for row in summary_rows %}
+            <tr>
+              <td>
+                {{ category_labels.get(row.category, row.category) }}
+              </td>
+              <td class="text-end">{{ row.total }}</td>
+              <td class="text-end text-success">{{ row.activas }}</td>
+              <td class="text-end text-muted">{{ row.inactivas }}</td>
+              <td class="text-end text-warning">{{ row.pendientes }}</td>
+            </tr>
+          {% endfor %}
         {% else %}
           <tr>
-            <td colspan="6" class="text-center text-muted small py-3">
-              No hay datos registrados aún.
+            <td colspan="5" class="text-center text-muted small py-3">
+              No hay información disponible.
             </td>
           </tr>
-        {% endfor %}
+        {% endif %}
       </tbody>
     </table>
   </div>
