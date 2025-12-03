@@ -1,22 +1,32 @@
 {% extends "base.html" %}
-{% block title %}Login - Gestor de Tarjetas{% endblock %}
+
+{% block title %}Acceso al sistema · Gestión de tarjetas{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-5">
-        <div class="card shadow-sm">
-            <div class="card-body">
-                <h4 class="card-title mb-3">Acceso al sistema</h4>
-                <form method="post">
-                    <div class="mb-3">
-                        <label for="password" class="form-label">Clave</label>
-                        <input type="password" class="form-control" id="password" name="password"
-                               required>
-                    </div>
-                    <button type="submit" class="btn btn-primary">Ingresar</button>
-                </form>
-            </div>
+<div class="row justify-content-center mt-5">
+  <div class="col-md-4">
+    <div class="content-container">
+      <h2 class="text-center mb-3">Ingresar al sistema</h2>
+
+      <form method="post" action="{{ url_for('login') }}">
+        <div class="mb-3">
+          <label class="form-label">Clave de acceso</label>
+          <input type="password"
+                 name="password"
+                 class="form-control"
+                 autofocus>
         </div>
+
+        <button type="submit" class="btn btn-primary-custom w-100">
+          <i class="fa-solid fa-right-to-bracket me-1"></i>
+          Entrar
+        </button>
+      </form>
+
+      <p class="text-muted small text-center mt-3 mb-0">
+        Ingrese una de las claves autorizadas configuradas en el módulo de claves.
+      </p>
     </div>
+  </div>
 </div>
 {% endblock %}
