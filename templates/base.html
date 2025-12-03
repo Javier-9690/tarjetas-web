@@ -41,6 +41,15 @@
       padding: 0.75rem 0;
     }
 
+    .system-header .brand-text {
+      font-weight: 700;
+      letter-spacing: .03em;
+      font-size: 1.1rem;
+    }
+    .brand-escondida { color: #ff7f00; }
+    .brand-separator { margin: 0 .25rem; }
+    .brand-bhp { color: #ff7f00; }
+
     .system-title h1 {
       font-size: 1.6rem;
       margin: 0;
@@ -52,9 +61,8 @@
       opacity: .9;
     }
 
-    /* LOGOS (Escondida izquierda, Aramark derecha) */
-    .system-logo-escondida,
-    .system-logo-aramark {
+    .system-logo,
+    .system-logo-escondida {
       height: 40px;
       max-width: 160px;
       object-fit: contain;
@@ -164,6 +172,24 @@
       margin-top: 1.5rem;
       font-size: .9rem;
     }
+
+    /* Estilos impresión (se afinan en print_summary.html) */
+    @media print {
+      .main-navbar,
+      .footer,
+      .no-print {
+        display: none !important;
+      }
+      body {
+        background: #ffffff;
+        padding-top: 0;
+      }
+      .content-container {
+        box-shadow: none;
+        margin: 0;
+        border-radius: 0;
+      }
+    }
   </style>
 
   {% block extra_head %}{% endblock %}
@@ -174,30 +200,35 @@
 <header class="system-header">
   <div class="container-fluid px-4">
     <div class="d-flex align-items-center justify-content-between">
-      <!-- Izquierda: Escondida BHP (solo una vez) -->
-      <div class="d-flex align-items-center">
+      <!-- Izquierda: ESCONDIDA BHP -->
+      <div class="d-flex align-items-center gap-2">
         <img src="{{ url_for('static', filename='Escondida.png') }}"
-             alt="Escondida BHP"
+             alt="Escondida"
              class="system-logo-escondida">
+        <span class="brand-text">
+          <span class="brand-escondida">ESCONDIDA</span>
+          <span class="brand-separator">|</span>
+          <span class="brand-bhp">BHP</span>
+        </span>
       </div>
 
-      <!-- Centro: título -->
+      <!-- Centro: Título -->
       <div class="system-title text-center flex-grow-1">
         <h1>Sistema de gestión de tarjetas</h1>
         <p>Plataforma Integral de Operaciones</p>
       </div>
 
       <!-- Derecha: Aramark -->
-      <div class="d-flex align-items-center justify-content-end">
+      <div>
         <img src="{{ url_for('static', filename='Aramark.png') }}"
              alt="Aramark"
-             class="system-logo-aramark">
+             class="system-logo">
       </div>
     </div>
   </div>
 </header>
 
-<!-- NAVBAR: módulos/categorías -->
+<!-- NAVBAR: categorías como módulos -->
 <nav class="navbar navbar-expand-lg navbar-dark main-navbar">
   <div class="container-fluid px-4">
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
@@ -246,6 +277,14 @@
           <a class="nav-link {% if current_category == 'PROVISORIA' %}active{% endif %}"
              href="{{ url_for('category_view', category_code='PROVISORIA') }}">
             <i class="fa-solid fa-id-card"></i> Provisoria
+          </a>
+        </li>
+
+        <!-- Resumen general -->
+        <li class="nav-item">
+          <a class="nav-link {% if request.endpoint == 'summary' %}active{% endif %}"
+             href="{{ url_for('summary') }}">
+            <i class="fa-solid fa-table-columns"></i> Resumen
           </a>
         </li>
 
