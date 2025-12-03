@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+
+{% block title %}Resumen de tarjetas (para impresión){% endblock %}
+
+{% block extra_head %}
+{{ super() }}
+<style>
+  @media print {
+    /* Ocultar elementos que no queremos en la hoja impresa */
+    nav.navbar,
+    .footer,
+    .btn-print-bar,
+    .alert {
+      display: none !important;
+    }
+    body {
+      background: #ffffff;
+    }
+    .content-container {
+      box-shadow: none;
+      margin-top: 0;
+      margin-bottom: 0;
+    }
+  }
+
+  .print-header-info {
+    font-size: 0.95rem;
+  }
+
+  .signature-container {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 4rem;
+  }
+
+  .signature-box {
+    width: 45%;
+    text-align: center;
+  }
+
+  .signature-line {
+    border-top: 1px solid #000;
+    margin-bottom: 0.25rem;
+    padding-top: 2.5rem; /* espacio vertical para la firma */
+  }
+
+  .signature-label {
+    font-size: 0.9rem;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="content-container mt-3">
+
+  <!-- Barra superior solo para pantalla (no se imprime) -->
+  <div class="d-flex justify-content-between align-items-center mb-3 btn-print-bar">
+    <h2 class="mb-0">Resumen de estado de tarjetas</h2>
+    <div class="d-flex gap-2">
+      <a href="{{ url_for('summary') }}" class="btn btn-outline-secondary btn-sm">
+        <i class="fa-solid fa-arrow-left-long me-1"></i> Volver al panel
+      </a>
+      <button class="btn btn-primary-custom btn-sm" onclick="window.print();">
+        <i class="fa-solid fa-print me-1"></i> Imprimir
+      </button>
+    </div>
+  </div>
+
+  <!-- Información de fecha -->
+  <div class="print-header-info mb-3">
+    <div><strong>Fecha de emisión:</strong> {{ today }}</div>
+  </div>
+
+  <!-- Tabla de resumen por categoría -->
+  <div class="table-responsive">
+    <table class="table table-bordered table-sm align-middle mb-4">
+      <thead class="table-light">
+        <tr>
+          <th style="width: 25%;">Categoría</th>
+          <th style="width: 15%;">Total tarjetas</th>
+          <th style="width: 15%;">Activas</th>
+          <th style="width: 15%;">Inactivas</th>
+          <th style="width: 30%;">Pendientes de devolución</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in summary_rows %}
+          <tr>
+            <td>{{ row.category_label }}</td>
+            <td>{{ row.total }}</td>
+            <td>{{ row.activas }}</td>
+            <td>{{ row.inactivas }}</td>
+            <td>{{ row.pendientes }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Zona de firmas -->
+  <div class="signature-container">
+    <div class="signature-box">
+      <div class="signature-line"></div>
+      <div class="signature-label">
+        Firma Responsable Área<br>
+        <span class="text-muted">Nombre y cargo</span>
+      </div>
+    </div>
+    <div class="signature-box">
+      <div class="signature-line"></div>
+      <div class="signature-label">
+        Firma Administración Campamento<br>
+        <span class="text-muted">Nombre y cargo</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
