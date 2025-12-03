@@ -57,7 +57,7 @@
     background-color: #f9fafb;
   }
 
-  /* Última página: queremos firmas al fondo */
+  /* Última página: firmas al fondo */
   .print-page-summary {
     display: flex;
     flex-direction: column;
@@ -92,7 +92,7 @@
 {% block content %}
 <div class="content-container mt-3">
 
-  <!-- Título general de la vista de impresión -->
+  <!-- Título general de la impresión -->
   <div class="text-center mb-4">
     <h2 class="page-title mb-1">Versión para impresión</h2>
     <small class="text-muted">
@@ -100,15 +100,12 @@
     </small>
   </div>
 
-  {# ==========================
-     1) DETALLE POR CATEGORÍA
-     Una página para cada categoría: MODULO, MAESTRA, MANTENCION, PROVISORIA
-     ========================== #}
-
-  {% for code, rows in category_cards.items() %}
+  {# 1) DETALLE POR CADA CATEGORÍA: una página por código #}
+  {% for code in category_cards.keys() %}
+    {% set rows = category_cards[code] %}
     <div class="print-page">
       <h3 class="print-page-title">
-        Detalle de tarjetas · Categoría {{ code|capitalize }}
+        Detalle de tarjetas · Categoría {{ category_labels.get(code, code) }}
       </h3>
 
       <table class="data-table">
@@ -149,10 +146,7 @@
     {% endif %}
   {% endfor %}
 
-  {# ==========================
-     2) ÚLTIMA PÁGINA: RESUMEN GENERAL + FIRMAS
-     ========================== #}
-
+  {# 2) ÚLTIMA PÁGINA: resumen general + firmas #}
   <div class="page-break"></div>
 
   <div class="print-page print-page-summary">
@@ -174,7 +168,7 @@
         <tbody>
           {% for row in summary_rows %}
             <tr>
-              <td>{{ row.category }}</td>
+              <td>{{ row.label }}</td>
               <td>{{ row.total }}</td>
               <td>{{ row.activas }}</td>
               <td>{{ row.inactivas }}</td>
