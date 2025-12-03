@@ -20,9 +20,9 @@
 
   <style>
     :root {
-      --primary-color: #264796;      /* azul header */
-      --secondary-color: #333333;    /* barra de menú */
-      --accent-color: #ff7f00;       /* BHP / detalles */
+      --primary-color: #264796;
+      --secondary-color: #333333;
+      --accent-color: #ff7f00;
       --light-bg: #f3f4f6;
       --border-color: #dee2e6;
     }
@@ -34,7 +34,6 @@
     }
 
     /* HEADER SUPERIOR */
-
     .system-header {
       background: var(--primary-color);
       color: #fff;
@@ -63,7 +62,6 @@
       text-align: center;
     }
 
-    /* LOGOS (mismo tamaño para ambos) */
     .system-logo,
     .system-logo-escondida {
       height: 40px;
@@ -72,7 +70,6 @@
     }
 
     /* NAVBAR PRINCIPAL */
-
     .main-navbar {
       background-color: var(--secondary-color) !important;
       padding-top: .15rem;
@@ -101,7 +98,6 @@
     }
 
     /* CONTENIDO */
-
     .content-container {
       background: #ffffff;
       border-radius: 8px;
@@ -167,7 +163,6 @@
     }
 
     /* FOOTER */
-
     .footer {
       background-color: var(--secondary-color);
       color: #ffffff;
@@ -186,9 +181,8 @@
   <div class="container-fluid px-4">
     <div class="d-flex align-items-center justify-content-between">
       <div class="d-flex align-items-center gap-2">
-        <!-- Logo Escondida (único) -->
         <img src="{{ url_for('static', filename='Escondida.png') }}"
-             alt="Escondida BHP"
+             alt="Escondida"
              class="system-logo-escondida">
         <span class="brand-text">
           <span class="brand-escondida">ESCONDIDA</span>
@@ -203,7 +197,6 @@
       </div>
 
       <div>
-        <!-- Logo Aramark -->
         <img src="{{ url_for('static', filename='Aramark.png') }}"
              alt="Aramark"
              class="system-logo">
@@ -212,7 +205,7 @@
   </div>
 </header>
 
-<!-- NAVBAR -->
+<!-- NAVBAR (categorías como módulos) -->
 <nav class="navbar navbar-expand-lg navbar-dark main-navbar">
   <div class="container-fluid px-4">
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
@@ -231,15 +224,6 @@
 
     <div class="collapse navbar-collapse" id="topNav">
       <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-
-        <!-- Resumen general -->
-        <li class="nav-item">
-          <a class="nav-link {% if request.endpoint == 'summary' %}active{% endif %}"
-             href="{{ url_for('summary') }}">
-            <i class="fa-solid fa-table-columns"></i> Resumen
-          </a>
-        </li>
-
         <!-- MODULO -->
         <li class="nav-item">
           <a class="nav-link {% if current_category == 'MODULO' %}active{% endif %}"
@@ -272,6 +256,13 @@
           </a>
         </li>
 
+        <!-- Resumen -->
+        <li class="nav-item">
+          <a class="nav-link {% if request.endpoint == 'summary' %}active{% endif %}"
+             href="{{ url_for('summary') }}">
+            <i class="fa-solid fa-table-columns"></i> Resumen
+          </a>
+        </li>
       </ul>
     </div>
   </div>
@@ -298,9 +289,7 @@
 <footer class="footer">
   <div class="container-fluid px-4 text-center">
     <p class="mb-0">
-      Desarrollado por Javier Rivera · &copy;
-      {{ (now or None) and now.year or 2025 }}
-      · Sistema de gestión de tarjetas
+      Desarrollado por Javier Rivera · &copy; {{ (now or None) and now.year or 2025 }} · Sistema de gestión de tarjetas
     </p>
   </div>
 </footer>
