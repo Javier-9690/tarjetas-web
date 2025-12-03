@@ -22,7 +22,7 @@
     :root {
       --primary-color: #264796;      /* azul header */
       --secondary-color: #333333;    /* barra de menú */
-      --accent-color: #ff7f00;       /* BHP / detalles */
+      --accent-color: #ff7f00;       /* detalles */
       --light-bg: #f3f4f6;
       --border-color: #dee2e6;
     }
@@ -34,21 +34,11 @@
     }
 
     /* HEADER SUPERIOR */
-
     .system-header {
       background: var(--primary-color);
       color: #fff;
       padding: 0.75rem 0;
     }
-
-    .system-header .brand-text {
-      font-weight: 700;
-      letter-spacing: .03em;
-      font-size: 1.1rem;
-    }
-    .brand-escondida { color: #ff7f00; }
-    .brand-separator { margin: 0 .25rem; }
-    .brand-bhp { color: #ff7f00; }
 
     .system-title h1 {
       font-size: 1.6rem;
@@ -61,15 +51,15 @@
       opacity: .9;
     }
 
-    /* Logo Aramark (único logo gráfico) */
-    .system-logo {
+    /* LOGOS (mismo tamaño) */
+    .system-logo,
+    .system-logo-escondida {
       height: 40px;
-      max-width: 160px;
+      max-width: 180px;
       object-fit: contain;
     }
 
     /* NAVBAR PRINCIPAL */
-
     .main-navbar {
       background-color: var(--secondary-color) !important;
       padding-top: .15rem;
@@ -98,7 +88,6 @@
     }
 
     /* CONTENIDO */
-
     .content-container {
       background: #ffffff;
       border-radius: 8px;
@@ -164,24 +153,12 @@
     }
 
     /* FOOTER */
-
     .footer {
       background-color: var(--secondary-color);
       color: #ffffff;
       padding: 1.1rem 0;
       margin-top: 1.5rem;
       font-size: .9rem;
-    }
-
-    /* IMPRESIÓN: esconder barra gris si quieres, opcional */
-    @media print {
-      .main-navbar,
-      .footer {
-        display: none !important;
-      }
-      body {
-        background-color: #ffffff;
-      }
     }
   </style>
 
@@ -193,22 +170,20 @@
 <header class="system-header">
   <div class="container-fluid px-4">
     <div class="d-flex align-items-center justify-content-between">
-      <!-- SOLO UNA VEZ: ESCONDIDA | BHP (texto) -->
+      <!-- Izquierda: logo Escondida BHP (una sola vez) -->
       <div class="d-flex align-items-center gap-2">
-        <span class="brand-text">
-          <span class="brand-escondida">ESCONDIDA</span>
-          <span class="brand-separator">|</span>
-          <span class="brand-bhp">BHP</span>
-        </span>
+        <img src="{{ url_for('static', filename='Escondida.png') }}"
+             alt="Escondida BHP"
+             class="system-logo-escondida">
       </div>
 
-      <!-- TÍTULO CENTRADO -->
+      <!-- Centro: título centrado -->
       <div class="system-title text-center flex-grow-1">
         <h1>Sistema de gestión de tarjetas</h1>
         <p>Plataforma Integral de Operaciones</p>
       </div>
 
-      <!-- LOGO ARAMARK A LA DERECHA -->
+      <!-- Derecha: logo Aramark -->
       <div>
         <img src="{{ url_for('static', filename='Aramark.png') }}"
              alt="Aramark"
@@ -218,7 +193,8 @@
   </div>
 </header>
 
-<!-- NAVBAR: categorías/módulos -->
+{% if session.get('logged_in') %}
+<!-- NAVBAR: módulos/categorías + impresión -->
 <nav class="navbar navbar-expand-lg navbar-dark main-navbar">
   <div class="container-fluid px-4">
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
@@ -237,12 +213,11 @@
 
     <div class="collapse navbar-collapse" id="topNav">
       <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-
         <!-- MODULO -->
         <li class="nav-item">
           <a class="nav-link {% if current_category == 'MODULO' %}active{% endif %}"
              href="{{ url_for('category_view', category_code='MODULO') }}">
-            <i class="fa-solid fa-circle-nodes"></i> Módulo
+            <i class="fa-solid fa-hotel"></i> Módulo
           </a>
         </li>
 
@@ -270,24 +245,29 @@
           </a>
         </li>
 
-        <!-- RESUMEN / IMPRESIÓN (opcional en menú) -->
+        <!-- RESUMEN -->
         <li class="nav-item">
           <a class="nav-link {% if request.endpoint == 'summary' %}active{% endif %}"
              href="{{ url_for('summary') }}">
             <i class="fa-solid fa-table-columns"></i> Resumen
           </a>
         </li>
+      </ul>
+
+      <ul class="navbar-nav ms-auto">
+        <!-- Versión impresión -->
         <li class="nav-item">
-          <a class="nav-link {% if request.endpoint == 'print_summary' %}active{% endif %}"
-             href="{{ url_for('print_summary') }}">
+          <a class="nav-link"
+             href="{{ url_for('print_summary') }}"
+             target="_blank">
             <i class="fa-solid fa-print"></i> Versión impresión
           </a>
         </li>
-
       </ul>
     </div>
   </div>
 </nav>
+{% endif %}
 
 <!-- CONTENIDO -->
 <main class="container-fluid px-4">
@@ -299,27 +279,3 @@
           {{ m }}
           <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
         </div>
-      {% endfor %}
-    {% endif %}
-  {% endwith %}
-
-  {% block content %}{% endblock %}
-</main>
-
-<!-- FOOTER -->
-<footer class="footer">
-  <div class="container-fluid px-4 text-center">
-    <p class="mb-0">
-      Desarrollado por Javier Rivera · &copy; {{ (now or None) and now.year or 2025 }} · Sistema de gestión de tarjetas
-    </p>
-  </div>
-</footer>
-
-<!-- Bootstrap JS -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
-        integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL"
-        crossorigin="anonymous"></script>
-
-{% block extra_js %}{% endblock %}
-</body>
-</html>
