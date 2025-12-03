@@ -22,7 +22,7 @@
     :root {
       --primary-color: #264796;      /* azul header */
       --secondary-color: #333333;    /* barra de menú */
-      --accent-color: #ff7f00;       /* detalles */
+      --accent-color: #ff7f00;       /* BHP / detalles */
       --light-bg: #f3f4f6;
       --border-color: #dee2e6;
     }
@@ -34,32 +34,45 @@
     }
 
     /* HEADER SUPERIOR */
+
     .system-header {
       background: var(--primary-color);
       color: #fff;
       padding: 0.75rem 0;
     }
 
+    .system-header .brand-text {
+      font-weight: 700;
+      letter-spacing: .03em;
+      font-size: 1.1rem;
+    }
+    .brand-escondida { color: #ff7f00; }
+    .brand-separator { margin: 0 .25rem; }
+    .brand-bhp { color: #ff7f00; }
+
     .system-title h1 {
       font-size: 1.6rem;
       margin: 0;
       font-weight: 600;
+      text-align: center;
     }
     .system-title p {
       margin: 0;
       font-size: .95rem;
       opacity: .9;
+      text-align: center;
     }
 
-    /* LOGOS (mismo tamaño) */
+    /* LOGOS (mismo tamaño para ambos) */
     .system-logo,
     .system-logo-escondida {
       height: 40px;
-      max-width: 180px;
+      max-width: 160px;
       object-fit: contain;
     }
 
     /* NAVBAR PRINCIPAL */
+
     .main-navbar {
       background-color: var(--secondary-color) !important;
       padding-top: .15rem;
@@ -88,6 +101,7 @@
     }
 
     /* CONTENIDO */
+
     .content-container {
       background: #ffffff;
       border-radius: 8px;
@@ -153,6 +167,7 @@
     }
 
     /* FOOTER */
+
     .footer {
       background-color: var(--secondary-color);
       color: #ffffff;
@@ -170,21 +185,25 @@
 <header class="system-header">
   <div class="container-fluid px-4">
     <div class="d-flex align-items-center justify-content-between">
-      <!-- Izquierda: logo Escondida BHP (una sola vez) -->
       <div class="d-flex align-items-center gap-2">
+        <!-- Logo Escondida (único) -->
         <img src="{{ url_for('static', filename='Escondida.png') }}"
              alt="Escondida BHP"
              class="system-logo-escondida">
+        <span class="brand-text">
+          <span class="brand-escondida">ESCONDIDA</span>
+          <span class="brand-separator">|</span>
+          <span class="brand-bhp">BHP</span>
+        </span>
       </div>
 
-      <!-- Centro: título centrado -->
-      <div class="system-title text-center flex-grow-1">
+      <div class="system-title flex-grow-1">
         <h1>Sistema de gestión de tarjetas</h1>
         <p>Plataforma Integral de Operaciones</p>
       </div>
 
-      <!-- Derecha: logo Aramark -->
       <div>
+        <!-- Logo Aramark -->
         <img src="{{ url_for('static', filename='Aramark.png') }}"
              alt="Aramark"
              class="system-logo">
@@ -193,8 +212,7 @@
   </div>
 </header>
 
-{% if session.get('logged_in') %}
-<!-- NAVBAR: módulos/categorías + impresión -->
+<!-- NAVBAR -->
 <nav class="navbar navbar-expand-lg navbar-dark main-navbar">
   <div class="container-fluid px-4">
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
@@ -213,11 +231,20 @@
 
     <div class="collapse navbar-collapse" id="topNav">
       <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+
+        <!-- Resumen general -->
+        <li class="nav-item">
+          <a class="nav-link {% if request.endpoint == 'summary' %}active{% endif %}"
+             href="{{ url_for('summary') }}">
+            <i class="fa-solid fa-table-columns"></i> Resumen
+          </a>
+        </li>
+
         <!-- MODULO -->
         <li class="nav-item">
           <a class="nav-link {% if current_category == 'MODULO' %}active{% endif %}"
              href="{{ url_for('category_view', category_code='MODULO') }}">
-            <i class="fa-solid fa-hotel"></i> Módulo
+            <i class="fa-solid fa-circle-nodes"></i> Módulo
           </a>
         </li>
 
@@ -245,29 +272,10 @@
           </a>
         </li>
 
-        <!-- RESUMEN -->
-        <li class="nav-item">
-          <a class="nav-link {% if request.endpoint == 'summary' %}active{% endif %}"
-             href="{{ url_for('summary') }}">
-            <i class="fa-solid fa-table-columns"></i> Resumen
-          </a>
-        </li>
-      </ul>
-
-      <ul class="navbar-nav ms-auto">
-        <!-- Versión impresión -->
-        <li class="nav-item">
-          <a class="nav-link"
-             href="{{ url_for('print_summary') }}"
-             target="_blank">
-            <i class="fa-solid fa-print"></i> Versión impresión
-          </a>
-        </li>
       </ul>
     </div>
   </div>
 </nav>
-{% endif %}
 
 <!-- CONTENIDO -->
 <main class="container-fluid px-4">
@@ -290,7 +298,9 @@
 <footer class="footer">
   <div class="container-fluid px-4 text-center">
     <p class="mb-0">
-      Desarrollado por Javier Rivera · &copy; {{ (now or None) and now.year or 2025 }} · Sistema de gestión de tarjetas
+      Desarrollado por Javier Rivera · &copy;
+      {{ (now or None) and now.year or 2025 }}
+      · Sistema de gestión de tarjetas
     </p>
   </div>
 </footer>
