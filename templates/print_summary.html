@@ -4,18 +4,27 @@
 
 {% block extra_head %}
 <style>
-  /* Página A4 horizontal (landscape) */
+  /* Página A4 horizontal */
   @page {
     size: A4 landscape;
     margin: 10mm;
   }
 
-  /* Contenedor general de cada página de impresión */
+  @media print {
+    .content-container {
+      box-shadow: none !important;
+      margin: 0 !important;
+      border-radius: 0 !important;
+    }
+  }
+
   .print-page {
     margin-bottom: 2rem;
-    display: flex;
-    flex-direction: column;
-    min-height: 100vh;  /* para empujar las firmas al fondo */
+    page-break-inside: avoid;
+  }
+
+  .page-break {
+    page-break-after: always;
   }
 
   .print-page-title {
@@ -40,60 +49,42 @@
   .data-table thead th {
     border-top: 1px solid #000;
     border-bottom: 2px solid #000;
-    background-color: #f5f5f5;
+    background-color: #f3f4f6;
+    text-align: left;
   }
 
-  .data-table tr {
-    page-break-inside: avoid;
+  .data-table tbody tr:nth-child(even) {
+    background-color: #f9fafb;
   }
 
-  /* Zona de firmas al fondo de la página */
-  .print-page-body {
-    flex: 1 0 auto;  /* contenido ocupa el espacio superior */
+  /* Última página: queremos firmas al fondo */
+  .print-page-summary {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
   }
 
-  .signature-box {
-    margin-top: auto;   /* se pega al fondo de la página */
-    padding-top: 1rem;
+  .summary-table-wrapper {
+    flex: 0 0 auto;
+  }
+
+  .print-signatures {
+    margin-top: auto;
+    padding-top: 2rem;
+  }
+
+  .signature-block {
+    width: 35%;
   }
 
   .signature-line {
-    border-bottom: 1px solid #000;
-    width: 70%;
-    margin: 0 auto 0.25rem auto;
-    height: 2px;
+    border-top: 1px solid #000;
+    margin-top: 3rem;
+    margin-bottom: 0.25rem;
   }
 
-  .signature-label {
-    font-size: 0.8rem;
-    text-transform: uppercase;
-    letter-spacing: .03em;
-  }
-
-  @media print {
-    .no-print {
-      display: none !important;
-    }
-
-    body {
-      background: #ffffff;
-      padding-top: 0;
-    }
-
-    .content-container {
-      box-shadow: none !important;
-      margin: 0;
-      border-radius: 0;
-      padding: 0;
-    }
-
-    .print-page {
-      page-break-after: always;
-    }
-
-    .print-page:last-of-type {
-      page-break-after: auto;
-    }
+  .signature-name {
+    font-size: 0.9rem;
   }
 </style>
 {% endblock %}
@@ -101,131 +92,113 @@
 {% block content %}
 <div class="content-container mt-3">
 
-  <!-- Barra superior solo en pantalla -->
-  <div class="d-flex justify-content-between align-items-center mb-3 no-print">
-    <h2 class="page-title mb-0">Resumen para impresión</h2>
-    <div class="d-flex gap-2">
-      <button class="btn btn-primary-custom btn-sm" onclick="window.print()">
-        <i class="fa-solid fa-print me-1"></i> Imprimir
-      </button>
-      <a href="{{ url_for('summary') }}" class="btn btn-outline-secondary btn-sm">
-        Volver al resumen
-      </a>
-    </div>
+  <!-- Título general de la vista de impresión -->
+  <div class="text-center mb-4">
+    <h2 class="page-title mb-1">Versión para impresión</h2>
+    <small class="text-muted">
+      Estado actual de las tarjetas registradas por categoría
+    </small>
   </div>
 
-  <p class="small text-muted mb-4 no-print">
-    Fecha de generación: {{ today }}
-  </p>
+  {# ==========================
+     1) DETALLE POR CATEGORÍA
+     Una página para cada categoría: MODULO, MAESTRA, MANTENCION, PROVISORIA
+     ========================== #}
 
-  {# ========= UNA PÁGINA POR CADA CATEGORÍA ========= #}
-  {% for code in categories %}
-    {% set detail = details_per_cat[code] %}
+  {% for code, rows in category_cards.items() %}
     <div class="print-page">
-      <div class="print-page-body">
-        <h3 class="print-page-title">
-          Estado actual de tarjetas · {{ detail.label }}
-        </h3>
-
-        <div class="table-responsive">
-          <table class="table table-sm align-middle data-table">
-            <thead>
-              <tr>
-                {% for _, label in detail.fields %}
-                  <th>{{ label }}</th>
-                {% endfor %}
-                <th>Activa / Inactiva</th>
-                <th>Estado</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% if detail.rows %}
-                {% for r in detail.rows %}
-                  <tr>
-                    {% for v in r["values"] %}
-                      <td>{{ v }}</td>
-                    {% endfor %}
-                    <td>{{ r.card.status or 'Activa' }}</td>
-                    <td>{{ r.estado_texto }}</td>
-                  </tr>
-                {% endfor %}
-              {% else %}
-                <tr>
-                  <td colspan="{{ detail.fields|length + 2 }}"
-                      class="text-center text-muted small py-3">
-                    No hay tarjetas registradas en esta categoría.
-                  </td>
-                </tr>
-              {% endif %}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- FIRMAS, PEGADAS ABAJO -->
-      <div class="row signature-box">
-        <div class="col-6 text-center">
-          <div class="signature-line"></div>
-          <div class="signature-label">Administradora hotelera</div>
-        </div>
-        <div class="col-6 text-center">
-          <div class="signature-line"></div>
-          <div class="signature-label">Supervisor hotelero</div>
-        </div>
-      </div>
-    </div>
-  {% endfor %}
-
-  {# ========= ÚLTIMA PÁGINA: RESUMEN GENERAL ========= #}
-  <div class="print-page">
-    <div class="print-page-body">
       <h3 class="print-page-title">
-        Resumen general de tarjetas
+        Detalle de tarjetas · Categoría {{ code|capitalize }}
       </h3>
 
-      <div class="table-responsive">
-        <table class="table table-sm align-middle data-table">
-          <thead>
-            <tr>
-              <th>Categoría</th>
-              <th class="text-end">Total</th>
-              <th class="text-end">Activas</th>
-              <th class="text-end">Inactivas</th>
-              <th class="text-end">Pendientes de entrega</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for row in summary_rows %}
+      <table class="data-table">
+        <thead>
+          <tr>
+            {% for field_name, label in category_fields[code] %}
+              <th>{{ label }}</th>
+            {% endfor %}
+            <th>Activa / Inactiva</th>
+            <th>Estado</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if rows %}
+            {% for r in rows %}
               <tr>
-                <td>{{ row.category_label }}</td>
-                <td class="text-end">{{ row.total }}</td>
-                <td class="text-end">{{ row.activas }}</td>
-                <td class="text-end">{{ row.inactivas }}</td>
-                <td class="text-end">{{ row.pendientes }}</td>
-              </tr>
-            {% else %}
-              <tr>
-                <td colspan="5" class="text-center text-muted small py-3">
-                  No hay datos registrados.
-                </td>
+                {% for v in r["values"] %}
+                  <td>{{ v }}</td>
+                {% endfor %}
+                <td>{{ r.card.status or 'Activa' }}</td>
+                <td>{{ r.estado_texto }}</td>
               </tr>
             {% endfor %}
-          </tbody>
-        </table>
-      </div>
+          {% else %}
+            <tr>
+              <td colspan="{{ category_fields[code]|length + 2 }}"
+                  class="text-center text-muted">
+                No hay tarjetas registradas en esta categoría.
+              </td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
     </div>
 
-    <!-- FIRMAS, PEGADAS ABAJO -->
-    <div class="row signature-box">
-      <div class="col-6 text-center">
-        <div class="signature-line"></div>
-        <div class="signature-label">Administradora hotelera</div>
-      </div>
-      <div class="col-6 text-center">
-        <div class="signature-line"></div>
-        <div class="signature-label">Supervisor hotelero</div>
+    {% if not loop.last %}
+      <div class="page-break"></div>
+    {% endif %}
+  {% endfor %}
+
+  {# ==========================
+     2) ÚLTIMA PÁGINA: RESUMEN GENERAL + FIRMAS
+     ========================== #}
+
+  <div class="page-break"></div>
+
+  <div class="print-page print-page-summary">
+    <div class="summary-table-wrapper">
+      <h3 class="print-page-title">
+        Resumen general de tarjetas por categoría
+      </h3>
+
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Categoría</th>
+            <th>Total</th>
+            <th>Activas</th>
+            <th>Inactivas</th>
+            <th>Pendientes de entrega</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in summary_rows %}
+            <tr>
+              <td>{{ row.category }}</td>
+              <td>{{ row.total }}</td>
+              <td>{{ row.activas }}</td>
+              <td>{{ row.inactivas }}</td>
+              <td>{{ row.pendientes }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- FIRMAS SOLO EN ESTA ÚLTIMA HOJA -->
+    <div class="print-signatures">
+      <div class="d-flex justify-content-between">
+        <div class="signature-block text-center">
+          <div class="signature-line"></div>
+          <div class="signature-name">Administradora hotelera</div>
+        </div>
+        <div class="signature-block text-center">
+          <div class="signature-line"></div>
+          <div class="signature-name">Supervisor hotelero</div>
+        </div>
       </div>
     </div>
   </div>
+
 </div>
 {% endblock %}
