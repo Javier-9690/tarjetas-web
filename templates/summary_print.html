@@ -4,7 +4,6 @@
 
 {% block extra_head %}
 <style>
-  /* Página horizontal para impresión */
   @page {
     size: A4 landscape;
     margin: 1.5cm;
@@ -24,6 +23,15 @@
       box-shadow: none;
       margin: 0;
       padding: 0;
+    }
+    .print-page {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+    }
+    .signature-row {
+      margin-top: auto;
     }
   }
 
@@ -90,15 +98,17 @@
 {% block content %}
 <div class="content-container print-wrapper">
 
-  {# 1) Páginas de detalle por categoría (en orden) #}
+  {# 1) Páginas de detalle por categoría #}
   {% for code in ["MODULO", "MAESTRA", "MANTENCION", "PROVISORIA"] %}
     {% set rows = category_rows.get(code, []) %}
     <section class="print-page">
-      <div class="print-title">
-        Detalle de tarjetas — {{ category_labels.get(code, code) }}
-      </div>
-      <div class="print-subtitle">
-        Estado actual de las tarjetas registradas
+      <div>
+        <div class="print-title">
+          Detalle de tarjetas — {{ category_labels.get(code, code) }}
+        </div>
+        <div class="print-subtitle">
+          Estado actual de las tarjetas registradas
+        </div>
       </div>
 
       <table class="print-table">
@@ -137,11 +147,13 @@
 
   {# 2) Última página: resumen general + firmas #}
   <section class="print-page">
-    <div class="print-title">
-      Resumen general de tarjetas
-    </div>
-    <div class="print-subtitle">
-      Totales por categoría
+    <div>
+      <div class="print-title">
+        Resumen general de tarjetas
+      </div>
+      <div class="print-subtitle">
+        Totales por categoría
+      </div>
     </div>
 
     <table class="print-table">
