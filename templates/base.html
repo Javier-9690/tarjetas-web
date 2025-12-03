@@ -20,9 +20,9 @@
 
   <style>
     :root {
-      --primary-color: #264796;
-      --secondary-color: #333333;
-      --accent-color: #ff7f00;
+      --primary-color: #264796;      /* azul header */
+      --secondary-color: #333333;    /* barra de menú */
+      --accent-color: #ff7f00;       /* detalles */
       --light-bg: #f3f4f6;
       --border-color: #dee2e6;
     }
@@ -34,42 +34,32 @@
     }
 
     /* HEADER SUPERIOR */
+
     .system-header {
       background: var(--primary-color);
       color: #fff;
       padding: 0.75rem 0;
     }
 
-    .system-header .brand-text {
-      font-weight: 700;
-      letter-spacing: .03em;
-      font-size: 1.1rem;
-    }
-    .brand-escondida { color: #ff7f00; }
-    .brand-separator { margin: 0 .25rem; }
-    .brand-bhp { color: #ff7f00; }
-
     .system-title h1 {
       font-size: 1.6rem;
       margin: 0;
       font-weight: 600;
-      text-align: center;
     }
     .system-title p {
       margin: 0;
       font-size: .95rem;
       opacity: .9;
-      text-align: center;
     }
 
-    .system-logo,
-    .system-logo-escondida {
+    .system-logo {
       height: 40px;
       max-width: 160px;
       object-fit: contain;
     }
 
     /* NAVBAR PRINCIPAL */
+
     .main-navbar {
       background-color: var(--secondary-color) !important;
       padding-top: .15rem;
@@ -98,6 +88,7 @@
     }
 
     /* CONTENIDO */
+
     .content-container {
       background: #ffffff;
       border-radius: 8px;
@@ -163,6 +154,7 @@
     }
 
     /* FOOTER */
+
     .footer {
       background-color: var(--secondary-color);
       color: #ffffff;
@@ -176,36 +168,31 @@
 </head>
 <body>
 
-<!-- HEADER SUPERIOR -->
+<!-- HEADER SUPERIOR (solo logos) -->
 <header class="system-header">
   <div class="container-fluid px-4">
     <div class="d-flex align-items-center justify-content-between">
-      <div class="d-flex align-items-center gap-2">
+      <div>
         <img src="{{ url_for('static', filename='Escondida.png') }}"
-             alt="Escondida"
-             class="system-logo-escondida">
-        <span class="brand-text">
-          <span class="brand-escondida">ESCONDIDA</span>
-          <span class="brand-separator">|</span>
-          <span class="brand-bhp">BHP</span>
-        </span>
+             alt="Logo Escondida"
+             class="system-logo">
       </div>
 
-      <div class="system-title flex-grow-1">
+      <div class="system-title text-center flex-grow-1">
         <h1>Sistema de gestión de tarjetas</h1>
-        <p>Plataforma Integral de Operaciones</p>
+        <p>Plataforma integral de operaciones</p>
       </div>
 
       <div>
         <img src="{{ url_for('static', filename='Aramark.png') }}"
-             alt="Aramark"
+             alt="Logo Aramark"
              class="system-logo">
       </div>
     </div>
   </div>
 </header>
 
-<!-- NAVBAR (categorías como módulos) -->
+<!-- NAVBAR: categorías/módulos -->
 <nav class="navbar navbar-expand-lg navbar-dark main-navbar">
   <div class="container-fluid px-4">
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
@@ -289,7 +276,7 @@
 <footer class="footer">
   <div class="container-fluid px-4 text-center">
     <p class="mb-0">
-      Desarrollado por Javier Rivera · &copy; {{ (now or None) and now.year or 2025 }} · Sistema de gestión de tarjetas
+      Desarrollado por Javier Rivera · &copy; {{ now.year }} · Sistema de gestión de tarjetas
     </p>
   </div>
 </footer>
