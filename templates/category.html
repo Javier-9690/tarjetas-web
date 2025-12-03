@@ -71,3 +71,176 @@
                 class="mb-2">
             <div class="mb-2">
               <input type="file"
+                     name="excel_file"
+                     class="form-control form-control-sm"
+                     accept=".xlsx,.xls">
+            </div>
+            <button type="submit" class="btn btn-outline-primary btn-sm w-100">
+              <i class="fa-solid fa-file-import me-1"></i> Importar tarjetas
+            </button>
+          </form>
+
+          <div class="d-flex flex-column gap-2">
+            <a href="{{ url_for('export_cards_excel', category_code=category_code) }}"
+               class="btn btn-outline-success btn-sm w-100">
+              <i class="fa-solid fa-file-excel me-1"></i> Exportar tarjetas
+            </a>
+            <a href="{{ url_for('export_cards_template', category_code=category_code) }}"
+               class="btn btn-outline-secondary btn-sm w-100">
+              <i class="fa-solid fa-file-circle-plus me-1"></i> Descargar plantilla
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TABLA DERECHA -->
+    <div class="col-lg-8">
+      <!-- Filtro de estado arriba de la tabla -->
+      <div class="filter-card mb-2">
+        <form class="row g-2 align-items-center"
+              method="get"
+              action="{{ url_for('category_view', category_code=category_code) }}">
+          <div class="col-auto">
+            <label for="statusFilter" class="col-form-label col-form-label-sm">
+              Ver:
+            </label>
+          </div>
+          <div class="col-auto">
+            <select id="statusFilter" name="status" class="form-select form-select-sm">
+              <option value="Todas" {{ 'selected' if status_filter == 'Todas' else '' }}>Todas</option>
+              <option value="Entregadas" {{ 'selected' if status_filter == 'Entregadas' else '' }}>Entregadas</option>
+              <option value="Devueltas" {{ 'selected' if status_filter == 'Devueltas' else '' }}>Devueltas</option>
+            </select>
+          </div>
+          <div class="col-auto">
+            <button class="btn btn-outline-secondary btn-sm" type="submit">
+              <i class="fa-solid fa-rotate me-1"></i> Aplicar
+            </button>
+          </div>
+          <div class="col text-end">
+            <span class="text-muted small">
+              {{ rows|length }} registro{{ '' if rows|length == 1 else 's' }}
+            </span>
+          </div>
+        </form>
+      </div>
+
+      <!-- Tabla + acciones múltiples -->
+      <form id="cardsForm" method="post">
+        <div class="d-flex justify-content-end mb-2 gap-2">
+          <button type="submit"
+                  class="btn btn-outline-primary btn-sm"
+                  formaction="{{ url_for('deliver_cards_multi', category_code=category_code) }}"
+                  formmethod="post">
+            <i class="fa-solid fa-people-carry-box me-1"></i>
+            Entrega/Devolución múltiple
+          </button>
+
+          <button type="submit"
+                  class="btn btn-outline-danger btn-sm"
+                  formaction="{{ url_for('delete_cards_multi', category_code=category_code) }}"
+                  formmethod="post"
+                  onclick="return confirm('¿Eliminar las tarjetas seleccionadas?');">
+            <i class="fa-solid fa-trash-can me-1"></i>
+            Eliminar seleccionadas
+          </button>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table table-sm align-middle data-table mb-0">
+            <thead>
+              <tr>
+                <th style="width: 32px;">
+                  <input class="form-check-input" type="checkbox" id="checkAll">
+                </th>
+                {% for _, label in fields %}
+                  <th>{{ label }}</th>
+                {% endfor %}
+                <th>Activa / Inactiva</th>
+                <th>Estado</th>
+                <th class="text-center">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% if rows %}
+                {% for r in rows %}
+                  <tr>
+                    <td>
+                      <input class="form-check-input"
+                             type="checkbox"
+                             name="selected_ids"
+                             value="{{ r.card.id }}">
+                    </td>
+
+                    {% for v in r["values"] %}
+                      <td>{{ v }}</td>
+                    {% endfor %}
+                    <td>{{ r.card.status or 'Activa' }}</td>
+                    <td>{{ r.estado_texto }}</td>
+                    <td class="text-center">
+                      <div class="table-actions justify-content-center">
+                        <!-- Entrega / devolución -->
+                        <a href="{{ url_for('deliver_card',
+                                            category_code=category_code,
+                                            card_id=r.card.id) }}"
+                           class="btn btn-outline-primary btn-sm"
+                           title="Entrega / devolución">
+                          <i class="fa-solid fa-person-walking-arrow-right"></i>
+                        </a>
+
+                        <!-- Historial -->
+                        <a href="{{ url_for('card_history',
+                                            category_code=category_code,
+                                            card_id=r.card.id) }}"
+                           class="btn btn-outline-secondary btn-sm"
+                           title="Historial">
+                          <i class="fa-solid fa-clock-rotate-left"></i>
+                        </a>
+
+                        <!-- Eliminar simple -->
+                        <form method="post"
+                              action="{{ url_for('delete_card',
+                                                 category_code=category_code,
+                                                 card_id=r.card.id) }}"
+                              onsubmit="return confirm('¿Eliminar esta tarjeta?');"
+                              class="d-inline">
+                          <button type="submit"
+                                  class="btn btn-outline-danger btn-sm"
+                                  title="Eliminar">
+                            <i class="fa-solid fa-trash"></i>
+                          </button>
+                        </form>
+                      </div>
+                    </td>
+                  </tr>
+                {% endfor %}
+              {% else %}
+                <tr>
+                  <td colspan="{{ fields|length + 4 }}" class="text-center text-muted small py-3">
+                    No hay tarjetas registradas en esta categoría.
+                  </td>
+                </tr>
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // Seleccionar / deseleccionar todos
+  const checkAll = document.getElementById('checkAll');
+  if (checkAll) {
+    checkAll.addEventListener('change', function () {
+      document.querySelectorAll('input[name="selected_ids"]').forEach(cb => {
+        cb.checked = checkAll.checked;
+      });
+    });
+  }
+</script>
+{% endblock %}
