@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block title %}Entrega / devolución múltiple · {{ category_labels.get(category_code, category_code) }}{% endblock %}
+
+{% block content %}
+<div class="content-container mt-3">
+  <h2 class="page-title mb-3">
+    Entrega / devolución múltiple
+    <small class="d-block text-muted fs-6">
+      Categoría {{ category_labels.get(category_code, category_code) }}
+    </small>
+  </h2>
+
+  <p class="small text-muted">
+    Se aplicará la misma información a todas las tarjetas seleccionadas:
+  </p>
+  <ul class="small">
+    {% for c in cards %}
+      <li>
+        ID {{ c.id }}
+        {% if c.numero_tarjeta %} · Tarjeta {{ c.numero_tarjeta }}{% endif %}
+        {% if c.nombre_tarjeta %} · {{ c.nombre_tarjeta }}{% endif %}
+      </li>
+    {% endfor %}
+  </ul>
+
+  <hr>
+
+  <form method="post" action="{{ url_for('deliver_cards_multi', category_code=category_code) }}">
+    {% for id in selected_ids %}
+      <input type="hidden" name="selected_ids" value="{{ id }}">
+    {% endfor %}
+
+    <div class="row g-3">
+      <div class="col-md-6">
+        <div class="mb-2">
+          <label class="form-label mb-1">RUT</label>
+          <input type="text" name="rut" class="form-control form-control-sm"
+                 value="{{ form_data.rut }}">
+        </div>
+        <div class="mb-2">
+          <label class="form-label mb-1">Nombre</label>
+          <input type="text" name="nombre" class="form-control form-control-sm"
+                 value="{{ form_data.nombre }}">
+        </div>
+        <div class="mb-2">
+          <label class="form-label mb-1">Cargo</label>
+          <input type="text" name="cargo" class="form-control form-control-sm"
+                 value="{{ form_data.cargo }}">
+        </div>
+        <div class="mb-2">
+          <label class="form-label mb-1">Empresa</label>
+          <input type="text" name="empresa" class="form-control form-control-sm"
+                 value="{{ form_data.empresa }}">
+        </div>
+      </div>
+
+      <div class="col-md-6">
+        <div class="mb-2">
+          <label class="form-label mb-1">Fecha/hora entrega</label>
+          <input type="text" name="entrega_at" class="form-control form-control-sm"
+                 value="{{ form_data.entrega_at }}">
+          <div class="form-text">
+            Formato: AAAA-MM-DD HH:MM:SS (dejar como está para usar la hora actual).
+          </div>
+        </div>
+        <div class="mb-2">
+          <label class="form-label mb-1">Fecha/hora devolución (opcional)</label>
+          <input type="text" name="devolucion_at" class="form-control form-control-sm"
+                 value="{{ form_data.devolucion_at }}">
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-3 d-flex justify-content-between">
+      <a href="{{ url_for('category_view', category_code=category_code) }}"
+         class="btn btn-outline-secondary btn-sm">
+        Volver
+      </a>
+      <button type="submit" class="btn btn-primary-custom btn-sm">
+        <i class="fa-solid fa-floppy-disk me-1"></i> Guardar para todas las tarjetas
+      </button>
+    </div>
+  </form>
+</div>
+{% endblock %}
